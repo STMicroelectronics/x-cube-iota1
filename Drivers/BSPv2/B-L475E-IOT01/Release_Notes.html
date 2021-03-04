@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for B-L475E-IOT01A Board Drivers</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="../../../_htmresc/mini-st.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<div class="card fluid">
+<div class="sectione dark">
+<center>
+<h1 id="release-notes-for-b-l475e-iot01a-board-drivers"><small>Release Notes for</small> <mark>B-L475E-IOT01A Board Drivers</mark></h1>
+<p>Copyright © 2017 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="../../../_htmresc/st_logo.png" alt="ST logo" /></a>
+</center>
+</div>
+</div>
+<h1 id="license">License</h1>
+<p>Licensed by ST under BSD 3-Clause license (the "License"). You may not use this package except in compliance with the License. You may obtain a copy of the License at:</p>
+<p><a href="https://opensource.org/licenses/BSD-3-Clause">https://opensource.org/licenses/BSD-3-Clause</a></p>
+<h1 id="purpose">Purpose</h1>
+<p>This directory contains the board drivers to demonstrate the capabilities of the B-L475E-IOT01A Kit.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section6" checked aria-hidden="true"> <label for="collapse-section6" aria-hidden="true">V2.0.0 / 29-March-2019</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<h3 id="component-release">Component release</h3>
+<p>Official release of B-L475E-IOT01A board drivers in line with STM32Cube BSP drivers development guidelines (UM2298).</p>
+<ul>
+<li>The board drivers are composed of
+<ul>
+<li>board drivers configuration file: <em>stm32l475e_iot01_conf_template.h</em>
+<ul>
+<li><em>stm32l475e_iot01_conf_template.h</em> file must be copied in user application as <em>stm32l475e_iot01_conf.h</em> with optional configuration update</li>
+</ul></li>
+<li>board drivers error codes file: <em>stm32l475e_iot01_errno.h</em></li>
+<li>BSP Common drivers (<em>stm32l475e_iot01.h/stm32l475e_iot01.c</em>)</li>
+<li>BSP Bus drivers (<em>stm32l475e_iot01_bus.h/stm32l475e_iot01_bus.c</em>)</li>
+<li>BSP AUDIO_IN class (<em>stm32l475e_iot01_audio.h/stm32l475e_iot01_audio.c</em>)</li>
+<li>BSP ENV_SENSOR class (<em>stm32l475e_iot01_env_sensors.h/stm32l475e_iot01_env_sensors.c</em>)</li>
+<li>BSP MOTION_SENSOR class (<em>stm32l475e_iot01_motion_sensors.h/stm32l475e_iot01_motion_sensors.c</em>)</li>
+<li>BSP QSPI class (<em>stm32l475e_iot01_qspi.h/stm32l475e_iot01_qspi.c</em>)</li>
+</ul></li>
+</ul>
+<h2 id="backward-compatibility">Backward Compatibility</h2>
+<p>This release breaks compatibility with previous versions.</p>
+<h2 id="dependencies">Dependencies</h2>
+<p>This software release is compatible with:</p>
+<ul>
+<li>BSP Common driver V6.0.0 or later</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section5" aria-hidden="true"> <label for="collapse-section5" aria-hidden="true">V1.1.3 / 27-July-2018</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<h3 id="component-release-1">Component release</h3>
+<p>Release notes update to new format</p>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V1.1.2 / 20-April-2018</label>
+<div>
+<h2 id="main-changes-2">Main Changes</h2>
+<h3 id="component-release-2">Component release</h3>
+<p>Header functions description cleanup</p>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section3" aria-hidden="true"> <label for="collapse-section3" aria-hidden="true">V1.1.1 / 13-October-2017</label>
+<div>
+<h2 id="main-changes-3">Main Changes</h2>
+<h3 id="component-release-3">Component release</h3>
+<p>Fix compilation warning with armcc –gnu</p>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.1.0 / 21-April-2017</label>
+<div>
+<h2 id="main-changes-4">Main Changes</h2>
+<h3 id="component-release-4">Component release</h3>
+<p>Add support of NFC via M24SR component.</p>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section1" aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 17-March-2017</label>
+<div>
+<h2 id="main-changes-5">Main Changes</h2>
+<h3 id="component-release-5">Component release</h3>
+<p>First official release of B-L475E-IOT01 BSP drivers</p>
+</div>
+</div>
+</div>
+</div>
+<footer class="sticky">
+For complete documentation on <mark>STM32 Microcontrollers</mark> , visit: <a href="http://www.st.com/STM32">http://www.st.com/STM32</a>
+</footer>
+</body>
+</html>
