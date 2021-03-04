@@ -60,18 +60,9 @@ extern "C" {
                   while(true) {};
 
 /* Exported functions ------------------------------------------------------- */
-// Transactions creation
 
-// Other functionalities
-//__weak int test_find_message(void) {printf("Enable \"TEST_FIND_MESSAGE\" macro to run the test\n"); return 0;}
-//__weak int test_get_message(void) {printf("Enable \"TEST_GET_MESSAGE\" macro to run the test\n"); return 0;}
-//__weak int test_get_balance(void)  {printf("Enable \"TEST_GET_BALANCE\" macro to run the test\n"); return 0;}
-//__weak void test_info(void) {printf("Enable \"TEST_INFO\" macro to run the test\n");}
-//__weak int test_get_output(void) {printf("Enable \"TEST_GET_OUTPUT\" macro to run the test\n"); return 0;}
-//
-//__weak int test_message_builder(void) {printf("Enable \"TEST_MESSAGE_BUILDER\" macro to run the test\n"); return 0;}
-//
-//__weak int test_crypto(void) {printf("Enable \"TEST_CRYPTO\" macro to run the test\n"); return 0;}
+__weak void setUp(void) {};
+__weak void tearDown(void) {};
 
 int test_crypto(void);
 int test_find_message(void);

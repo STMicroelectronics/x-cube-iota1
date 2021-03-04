@@ -225,7 +225,6 @@
                     <state>SENSOR</state>
                     <state>MBEDTLS_CONFIG_FILE=&lt;mbedtls_config.h&gt;</state>
                     <state>USE_WIFI</state>
-                    <state>UNITY_WEAK_PRAGMA</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>

@@ -83,8 +83,6 @@
                                     									
                                     <listOptionValue builtIn="false" value="MBEDTLS_CONFIG_FILE=&lt;mbedtls_config.h&gt;"/>
                                     									
-                                    <listOptionValue builtIn="false" value="UNITY_WEAK_PRAGMA"/>
-                                    									
                                     <listOptionValue builtIn="false" value="STM32L4S5xx"/>
                                     								
                                 </option>
