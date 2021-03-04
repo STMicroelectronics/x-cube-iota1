@@ -85,12 +85,15 @@ do {                                                                            
 #define uthash_strlen(s) strlen(s)
 #endif
 
-#ifndef HASH_FUNCTION
-#define HASH_FUNCTION(keyptr,keylen,hashv) HASH_JEN(keyptr, keylen, hashv)
+#ifdef uthash_memcmp
+/* This warning will not catch programs that define uthash_memcmp AFTER including uthash.h. */
+#warning "uthash_memcmp is deprecated; please use HASH_KEYCMP instead"
+#else
+#define uthash_memcmp(a,b,n) memcmp(a,b,n)
 #endif
 
 #ifndef HASH_KEYCMP
-#define HASH_KEYCMP(a,b,n) memcmp(a,b,n)
+#define HASH_KEYCMP(a,b,n) uthash_memcmp(a,b,n)
 #endif
 
 #ifndef uthash_noexpand_fyi
@@ -148,7 +151,7 @@ do {                                                                            
 
 #define HASH_VALUE(keyptr,keylen,hashv)                                          \
 do {                                                                             \
-  HASH_FUNCTION(keyptr, keylen, hashv);                                          \
+  HASH_FCN(keyptr, keylen, hashv);                                               \
 } while (0)
 
 #define HASH_FIND_BYHASHVALUE(hh,head,keyptr,keylen,hashval,out)                 \
@@ -578,6 +581,13 @@ do {                                                                            
 } while (0)
 #else
 #define HASH_EMIT_KEY(hh,head,keyptr,fieldlen)
+#endif
+
+/* default to Jenkin's hash unless overridden e.g. DHASH_FUNCTION=HASH_SAX */
+#ifdef HASH_FUNCTION
+#define HASH_FCN HASH_FUNCTION
+#else
+#define HASH_FCN HASH_JEN
 #endif
 
 /* The Bernstein hash function, used in Perl prior to v5.6. Note (x<<5+x)=x*33. */
