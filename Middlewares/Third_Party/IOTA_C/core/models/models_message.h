@@ -38,7 +38,7 @@ extern "C" {
  *
  * @return core_message_t*
  */
-core_message_t* core_message_new();
+core_message_t* core_message_new(void);
 
 /**
  * @brief Sign a transaction message

@@ -551,9 +551,11 @@ char* message_to_json(core_message_t* msg) {
 
   cJSON_AddItemToObject(msg_obj, JSON_KEY_PARENT_IDS, parents);
   byte_t* p = NULL;
-  while ((p = (byte_t*)utarray_next(msg->parents, p))) {
+  p = (byte_t*)utarray_next(msg->parents, p);
+  while (p != NULL) {
     bin2hex(p, IOTA_MESSAGE_ID_BYTES, tmp_id_str, sizeof(tmp_id_str));
     cJSON_AddItemToArray(parents, cJSON_CreateString(tmp_id_str));
+    p = (byte_t*)utarray_next(msg->parents, p);
   }
 
   // add payload

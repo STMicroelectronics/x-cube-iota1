@@ -73,7 +73,7 @@ int deser_get_tips(char const *const j_str, res_tips_t *res);
  *
  * @return res_tips_t*
  */
-res_tips_t *res_tips_new();
+res_tips_t *res_tips_new(void);
 
 /**
  * @brief Free a get_tips response object

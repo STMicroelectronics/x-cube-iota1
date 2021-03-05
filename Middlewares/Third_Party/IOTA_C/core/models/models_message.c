@@ -54,7 +54,7 @@ static void unlock_sig_free(unlock_sig_ht** ht) {
   }
 }
 
-core_message_t* core_message_new() {
+core_message_t* core_message_new(void) {
   core_message_t* msg = malloc(sizeof(core_message_t));
   if (msg) {
     msg->network_id = 0;
@@ -110,7 +110,8 @@ int core_message_sign_transaction(core_message_t* msg) {
     // create a ref block, if public key exists in unlocked_sig
     if (unlock_sig_find_by_pub(&unlocked_sig, elm->keypair.pub_key)) {
       // create a reference block
-      if ((ret = tx_blocks_add_reference(&tx->unlock_blocks, unlock_sig_count(&unlocked_sig) - 1))) {
+      ret = tx_blocks_add_reference(&tx->unlock_blocks, unlock_sig_count(&unlocked_sig) - 1);
+      if (ret != 0) {
         break;
       }
     } else {
@@ -118,18 +119,21 @@ int core_message_sign_transaction(core_message_t* msg) {
       ed25519_signature_t signature;
       memset(&signature, 0, sizeof(signature));
       signature.type = ADDRESS_VER_ED25519;
-      if ((ret = iota_crypto_sign(elm->keypair.priv, essence_hash, CRYPTO_BLAKE2B_HASH_BYTES, signature.signature))) {
+      ret = iota_crypto_sign(elm->keypair.priv, essence_hash, CRYPTO_BLAKE2B_HASH_BYTES, signature.signature);
+      if (ret != 0) {
         break;
       }
       memcpy(signature.pub_key, elm->keypair.pub_key, ED_PUBLIC_KEY_BYTES);
 
       // create a signature block
-      if ((ret = tx_blocks_add_signature(&tx->unlock_blocks, &signature))) {
+      ret = tx_blocks_add_signature(&tx->unlock_blocks, &signature);
+      if (ret != 0) {
         break;
       }
 
       // add to unlocked sig
-      if ((ret = unlock_sig_add(&unlocked_sig, &signature, unlock_sig_count(&unlocked_sig)))) {
+      ret = unlock_sig_add(&unlocked_sig, &signature, unlock_sig_count(&unlocked_sig));
+      if (ret != 0) {
         break;
       }
     }

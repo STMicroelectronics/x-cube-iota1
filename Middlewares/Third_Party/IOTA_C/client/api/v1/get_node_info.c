@@ -67,7 +67,6 @@ int get_node_info(iota_client_conf_t const *conf, res_node_info_t *res) {
   //byte_buf_t *http_res = NULL;
   http_handle_t http_handle;
   http_response_t http_res;
-  uint32_t http_resp_status;
 
   if (conf == NULL || res == NULL) {
     printf("[%s:%d]: get_node_info failed (null parameter)\n", __func__, __LINE__);

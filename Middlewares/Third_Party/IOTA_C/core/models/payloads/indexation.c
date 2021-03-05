@@ -6,7 +6,7 @@
 
 #include "indexation.h"
 
-indexation_t *indexation_new() {
+indexation_t *indexation_new(void) {
   indexation_t *idx = malloc(sizeof(indexation_t));
   if (idx) {
     idx->index = NULL;

@@ -41,7 +41,7 @@ extern "C" {
  * @brief Allocates balance response object
  * @return res_balance_t*
  */
-res_balance_t *res_balance_new();
+res_balance_t *res_balance_new(void);
 
 /**
  * @brief Frees an balance response object

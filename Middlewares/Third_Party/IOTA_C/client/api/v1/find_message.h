@@ -43,7 +43,7 @@ extern "C" {
  *
  * @return res_find_msg_t*
  */
-res_find_msg_t *res_find_msg_new();
+res_find_msg_t *res_find_msg_new(void);
 
 /**
  * @brief Free a find message response object

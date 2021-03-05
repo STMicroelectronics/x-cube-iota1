@@ -40,7 +40,6 @@
 void main_menu(void)
 {
   bool exit_program = false;
-  char node_url[50];
   
   while(!exit_program) {    
     int32_t choice = -1;

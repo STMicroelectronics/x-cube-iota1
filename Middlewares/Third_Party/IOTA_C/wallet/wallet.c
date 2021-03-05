@@ -129,7 +129,8 @@ static transaction_payload_t* wallet_build_transaction(iota_wallet_t* w, uint32_
   if (ret == 0) {
     // get outputs
     bin2hex(send_addr, sizeof(send_addr), tmp_addr, sizeof(tmp_addr));
-    if (!(outputs_res = res_outputs_address_new())) {
+    outputs_res = res_outputs_address_new();
+    if (!outputs_res) {
       printf("[%s:%d] Err: invalid length of path\n", __func__, __LINE__);
       ret = -1;
     }
@@ -271,7 +272,8 @@ int wallet_address_by_index(iota_wallet_t* w, uint32_t index, byte_t addr[]) {
     return -1;
   }
 
-  if ((path_buf = wallet_path_from_index(w, index))) {
+  path_buf = wallet_path_from_index(w, index);
+  if (path_buf) {
     ret = address_from_path(w->seed, path_buf, addr);
     free(path_buf);
   }

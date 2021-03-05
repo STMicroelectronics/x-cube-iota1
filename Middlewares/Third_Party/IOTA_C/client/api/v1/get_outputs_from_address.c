@@ -6,7 +6,7 @@
 #include "http_lib.h"
 #include "iota_str.h"
 
-static get_outputs_address_t *outputs_new() {
+static get_outputs_address_t *outputs_new(void) {
   get_outputs_address_t *ids = malloc(sizeof(get_outputs_address_t));
   if (ids) {
     memset(ids->address, 0, sizeof(ids->address));
@@ -89,23 +89,23 @@ int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *r
         printf("[%s:%d]: allocate output object failed\n", __func__, __LINE__);
         goto end;
       }
-      
-      if ((ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_ids->address, sizeof(res->u.output_ids->address))) != 0) {
+      ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_ids->address, sizeof(res->u.output_ids->address));
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR);
         goto end;
       }
-      
-      if ((ret = json_get_uint32(data_obj, JSON_KEY_MAX_RESULTS, &res->u.output_ids->max_results) != 0)) {
+      ret = json_get_uint32(data_obj, JSON_KEY_MAX_RESULTS, &res->u.output_ids->max_results);
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_MAX_RESULTS);
         goto end;
       }
-      
-      if ((ret = json_get_uint32(data_obj, JSON_KEY_COUNT, &res->u.output_ids->count) != 0)) {
+      ret = json_get_uint32(data_obj, JSON_KEY_COUNT, &res->u.output_ids->count);
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_COUNT);
         goto end;
       }
-      
-      if ((ret = json_string_array_to_utarray(data_obj, JSON_KEY_OUTPUT_IDS, res->u.output_ids->outputs)) != 0) {
+      ret = json_string_array_to_utarray(data_obj, JSON_KEY_OUTPUT_IDS, res->u.output_ids->outputs);
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_OUTPUT_IDS);
         goto end;
       }
@@ -126,7 +126,6 @@ int get_outputs_from_address(iota_client_conf_t const *conf, char const addr[], 
   int ret = -1;
   http_response_t http_res;
   http_handle_t http_handle;
-  uint32_t http_resp_status;
 
   if (conf == NULL || addr == NULL || res == NULL) {
     // invalid parameters

@@ -158,8 +158,6 @@ static ed25519_vector_t* parsing_vector(char* line) {
 // test vectors: https://ed25519.cr.yp.to/python/sign.input
 void test_ed25519_signature()
 {
-  int read_len = 0;
-  int tot_len = 0;
   char in_signature[] = {"4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c:3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c:72:92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c0072:"};
   uint8_t out_signature[64];
 

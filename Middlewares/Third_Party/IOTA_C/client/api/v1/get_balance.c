@@ -10,7 +10,7 @@
 #include "http_lib.h"
 #include "iota_str.h"
 
-res_balance_t *res_balance_new() {
+res_balance_t *res_balance_new(void) {
   res_balance_t *res = malloc(sizeof(res_balance_t));
   if (res) {
     res->is_error = false;
@@ -90,7 +90,6 @@ int get_balance(iota_client_conf_t const *conf, char const addr[], res_balance_t
   char const *const cmd_balance = "api/v1/addresses/ed25519/";
   http_response_t http_res;
   http_handle_t http_handle;
-  uint32_t http_resp_status;
 
   if (addr == NULL || res == NULL || conf == NULL) {
     printf("[%s:%d]: get_balance failed (null parameter)\n", __func__, __LINE__);

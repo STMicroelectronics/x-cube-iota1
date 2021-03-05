@@ -72,7 +72,7 @@ extern "C" {
  *
  * @return transaction_essence_t*
  */
-transaction_essence_t* tx_essence_new();
+transaction_essence_t* tx_essence_new(void);
 
 /**
  * @brief Add an input element to the essence
@@ -153,7 +153,7 @@ void tx_essence_sort_input_output(transaction_essence_t* es);
  *
  * @return tx_unlock_blocks_t* a NULL pointer
  */
-tx_unlock_blocks_t* tx_blocks_new();
+tx_unlock_blocks_t* tx_blocks_new(void);
 
 /**
  * @brief Add a signature block
@@ -217,7 +217,7 @@ void tx_blocks_print(tx_unlock_blocks_t* blocks);
  *
  * @return transaction_payload_t*
  */
-transaction_payload_t* tx_payload_new();
+transaction_payload_t* tx_payload_new(void);
 
 /**
  * @brief Add an input to the transaction payload

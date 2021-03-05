@@ -43,7 +43,7 @@ extern "C" {
  *
  * @return res_outputs_address_t*
  */
-res_outputs_address_t *res_outputs_address_new();
+res_outputs_address_t *res_outputs_address_new(void);
 
 /**
  * @brief Frees an output address response object

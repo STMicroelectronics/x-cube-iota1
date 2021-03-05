@@ -26,7 +26,7 @@ extern "C" {
  *
  * @return indexation_t*
  */
-indexation_t *indexation_new();
+indexation_t *indexation_new(void);
 
 /**
  * @brief Free an indexation payload

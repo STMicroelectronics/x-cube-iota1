@@ -13,7 +13,6 @@ int get_tips(iota_client_conf_t const *conf, res_tips_t *res) {
   http_response_t http_res;
   char const *const cmd_tips = "api/v1/tips";
   http_handle_t http_handle;
-  uint32_t http_resp_status;
 
   // compose restful api command
   iota_str_t *cmd = iota_str_new(conf->url);
@@ -69,7 +68,7 @@ done:
   return ret;
 }
 
-res_tips_t *res_tips_new() {
+res_tips_t *res_tips_new(void) {
   res_tips_t *tips = malloc(sizeof(res_tips_t));
   if (tips) {
     tips->u.tips = NULL;

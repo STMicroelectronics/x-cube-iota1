@@ -84,7 +84,7 @@ extern "C" {
  *
  * @return payload_tx_t*
  */
-payload_tx_t *payload_tx_new();
+payload_tx_t *payload_tx_new(void);
 
 /**
  * @brief Free a transaction payload object
@@ -98,7 +98,7 @@ void payload_tx_free(payload_tx_t *tx);
  *
  * @return payload_milestone_t*
  */
-payload_milestone_t *payload_milestone_new();
+payload_milestone_t *payload_milestone_new(void);
 
 /**
  * @brief Free a milestone payload object
@@ -112,7 +112,7 @@ void payload_milestone_free(payload_milestone_t *ms);
  *
  * @return payload_index_t*
  */
-payload_index_t *payload_index_new();
+payload_index_t *payload_index_new(void);
 
 /**
  * @brief Free an indexcation payload object
@@ -126,7 +126,7 @@ void payload_index_free(payload_index_t *idx);
  *
  * @return message_t*
  */
-message_t *api_message_new();
+message_t *api_message_new(void);
 
 /**
  * @brief Free a message object

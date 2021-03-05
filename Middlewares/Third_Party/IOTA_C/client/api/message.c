@@ -7,7 +7,7 @@ static const UT_icd ut_tx_intputs_icd = {sizeof(payload_tx_input_t), NULL, NULL,
 static const UT_icd ut_tx_outputs_icd = {sizeof(payload_tx_output_t), NULL, NULL, NULL};
 static const UT_icd ut_tx_blocks_icd = {sizeof(payload_unlock_block_t), NULL, NULL, NULL};
 
-payload_tx_t *payload_tx_new() {
+payload_tx_t *payload_tx_new(void) {
   payload_tx_t *tx = (payload_tx_t *)malloc(sizeof(payload_tx_t));
   if (tx) {
     memset(tx, 0, sizeof(payload_tx_t));
@@ -37,7 +37,7 @@ void payload_tx_free(payload_tx_t *tx) {
   }
 }
 
-payload_milestone_t *payload_milestone_new() {
+payload_milestone_t *payload_milestone_new(void) {
   payload_milestone_t *ms = malloc(sizeof(payload_milestone_t));
   if (ms) {
     utarray_new(ms->signatures, &ut_str_icd);
@@ -57,7 +57,7 @@ void payload_milestone_free(payload_milestone_t *ms) {
   }
 }
 
-payload_index_t *payload_index_new() {
+payload_index_t *payload_index_new(void) {
   payload_index_t *idx = malloc(sizeof(payload_index_t));
   if (idx) {
     idx->data = byte_buf_new();
@@ -84,7 +84,7 @@ void payload_index_free(payload_index_t *idx) {
   }
 }
 
-message_t *api_message_new() {
+message_t *api_message_new(void) {
   message_t *msg = malloc(sizeof(message_t));
   if (msg) {
     memset(msg->net_id, 0, sizeof(msg->net_id));

@@ -34,7 +34,7 @@ extern "C" {
  *
  * @return res_message_t*
  */
-res_message_t *res_message_new();
+res_message_t *res_message_new(void);
 
 /**
  * @brief Free a message object

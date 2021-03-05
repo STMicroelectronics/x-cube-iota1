@@ -123,8 +123,10 @@ json_error_t utarray_to_json_string_array(UT_array const* const ut, cJSON* const
 
   cJSON_AddItemToObject(json_obj, key, array_obj);
 
-  while ((p = (char**)utarray_next(ut, p))) {
+  p = (char**)utarray_next(ut, p);
+  while (p != NULL) {
     cJSON_AddItemToArray(array_obj, cJSON_CreateString(*p));
+    p = (char**)utarray_next(ut, p);
   }
   return JSON_OK;
 }

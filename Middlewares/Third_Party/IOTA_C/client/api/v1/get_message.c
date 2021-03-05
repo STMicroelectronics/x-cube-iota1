@@ -296,7 +296,7 @@ end:
   return ret;
 }
 
-res_message_t *res_message_new() {
+res_message_t *res_message_new(void) {
   res_message_t *msg = malloc(sizeof(res_message_t));
   if (msg) {
     msg->is_error = false;
@@ -363,7 +363,8 @@ int deser_get_message(char const *const j_str, res_message_t *res) {
       
       cJSON *payload = cJSON_GetObjectItemCaseSensitive(data_obj, JSON_KEY_PAYLOAD);
       if (payload) {
-        if ((ret = json_get_uint32(payload, JSON_KEY_TYPE, &res->u.msg->type) != 0)) {
+        ret = json_get_uint32(payload, JSON_KEY_TYPE, &res->u.msg->type);
+        if (ret != 0) {
           printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_TYPE);
           goto end;
         }
@@ -400,7 +401,6 @@ int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_m
   iota_str_t *cmd = NULL;
   http_response_t http_res;
   http_handle_t http_handle;
-  uint32_t http_resp_status;
 
   if (conf == NULL || msg_id == NULL || res == NULL) {
     // invalid parameters

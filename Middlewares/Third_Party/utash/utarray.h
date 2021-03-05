@@ -243,7 +243,10 @@ static void utarray_str_cpy(void *dst, const void *src) {
   } else {
     size_t len = strlen(*srcc) + 1;
     *dstc = malloc(len);
-    memcpy(*dstc, *srcc, strlen(*srcc));
+    if(*dstc == NULL) {
+      return;
+    }
+    memcpy(*dstc, *srcc, len);
   }
 #endif
 }

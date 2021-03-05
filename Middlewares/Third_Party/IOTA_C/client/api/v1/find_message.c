@@ -26,7 +26,7 @@ static void find_msg_free(find_msg_t *ids) {
   }
 }
 
-res_find_msg_t *res_find_msg_new() {
+res_find_msg_t *res_find_msg_new(void) {
   res_find_msg_t *res = malloc(sizeof(res_find_msg_t));
   if (res) {
     res->is_error = false;
@@ -131,7 +131,6 @@ int find_message_by_index(iota_client_conf_t const *conf, char index[], res_find
   memset(index_hex, 0, sizeof(index_hex));
   http_handle_t http_handle;
   http_response_t http_res;
-  uint32_t http_resp_status;
 
   if (conf == NULL || index == NULL || res == NULL) {
     // invalid parameters

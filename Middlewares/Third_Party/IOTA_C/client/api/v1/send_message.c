@@ -147,7 +147,6 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
   int ret = -1;
   iota_str_t* cmd = NULL;
   http_handle_t http_handle;
-  uint32_t http_resp_status;
   byte_buf_t* json_data = byte_buf_new();
   http_response_t node_res;
   node_res.body = byte_buf_new();
@@ -293,7 +292,6 @@ int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg,
   byte_t tmp_msg_parent[IOTA_MESSAGE_ID_BYTES];
   memset(&tmp_msg_parent, 0, sizeof(tmp_msg_parent));
   http_handle_t http_handle;
-  uint32_t http_resp_status;
 
   if (!json_data || !node_res.body) {
     printf("[%s:%d] allocate http buffer failed\n", __func__, __LINE__);
@@ -313,9 +311,11 @@ int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg,
           goto end;
         } else {
           char** p = NULL;
-          while ((p = (char**)utarray_next(tips->u.tips, p))) {
+          p = (char**)utarray_next(tips->u.tips, p);
+          while (p != NULL) {
             hex2bin(*p, STR_TIP_MSG_ID_LEN, tmp_msg_parent, sizeof(tmp_msg_parent));
             utarray_push_back(msg->parents, tmp_msg_parent);
+            p = (char**)utarray_next(tips->u.tips, p);
           }
           char* msg_str = message_to_json(msg);
           if (!msg_str) {

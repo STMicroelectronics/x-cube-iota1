@@ -53,8 +53,6 @@ bool app_needs_root_ca(void)
   */
 void iota_wallet_run(void const *arg)
 {
-  bool skip_reconf = false;
-
   terminal_print_frame("IOTA ACCOUNT", '+', '|', '~', WW, RED);
     
   serial_press_any();

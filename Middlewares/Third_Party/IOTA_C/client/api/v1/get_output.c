@@ -12,7 +12,6 @@ int get_output(iota_client_conf_t const *conf, char const output_id[], res_outpu
   int ret = -1;
   http_response_t http_res;
   http_handle_t http_handle;
-  uint32_t http_resp_status;
 
   if (conf == NULL || output_id == NULL || res == NULL) {
     // invalid parameters
