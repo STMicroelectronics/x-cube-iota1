@@ -71,6 +71,9 @@ void test_wallet_api_with_node() {
   iota_wallet_t* wallet = wallet_create(seed, "m/44'/4218'/0'/0'");
   TEST_ASSERT_NOT_NULL(wallet);
 
+  // testnet with default port number
+  TEST_ASSERT(wallet_set_endpoint(wallet, "https://api.lb-0.testnet.chrysalis2.com/", 0) == 0);
+
   // get address of index 0
   byte_t addr[ED25519_ADDRESS_BYTES];
   memset(addr, 0, sizeof(addr));
@@ -91,7 +94,7 @@ void test_wallet_api_with_node() {
                          0x6d, 0x20, 0x69, 0x6f, 0x74, 0x61, 0x2e, 0x63};
   TEST_ASSERT(wallet_send(wallet, 0, NULL, 0, "iota.c", index_data, sizeof(index_data)) == 0);
 
-  // send transaction with unsificent balance
+  // send transaction with unsufficient balance
   TEST_ASSERT(wallet_send(wallet, 0, recv_addr, 2779530283277760, NULL, NULL, 0) != 0);
   // send transaction without indexation
   TEST_ASSERT(wallet_send(wallet, 0, recv_addr, 1000, NULL, NULL, 0) == 0);
