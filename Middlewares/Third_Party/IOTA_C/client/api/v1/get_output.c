@@ -11,6 +11,7 @@
 int get_output(iota_client_conf_t const *conf, char const output_id[], res_output_t *res) {
   int ret = -1;
   http_response_t http_res;
+  memset(&http_res, 0, sizeof(http_response_t));
   http_handle_t http_handle;
 
   if (conf == NULL || output_id == NULL || res == NULL) {

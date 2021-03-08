@@ -14,6 +14,8 @@ res_balance_t *res_balance_new(void) {
   res_balance_t *res = malloc(sizeof(res_balance_t));
   if (res) {
     res->is_error = false;
+    res->u.error = NULL;
+    res->u.output_balance = NULL;
     return res;
   }
   return NULL;
@@ -89,6 +91,7 @@ int get_balance(iota_client_conf_t const *conf, char const addr[], res_balance_t
   int ret = -1;
   char const *const cmd_balance = "api/v1/addresses/ed25519/";
   http_response_t http_res;
+  memset(&http_res, 0, sizeof(http_response_t));
   http_handle_t http_handle;
 
   if (addr == NULL || res == NULL || conf == NULL) {

@@ -125,6 +125,7 @@ end:
 int get_outputs_from_address(iota_client_conf_t const *conf, char const addr[], res_outputs_address_t *res) {
   int ret = -1;
   http_response_t http_res;
+  memset(&http_res, 0, sizeof(http_response_t));
   http_handle_t http_handle;
 
   if (conf == NULL || addr == NULL || res == NULL) {

@@ -300,6 +300,8 @@ res_message_t *res_message_new(void) {
   res_message_t *msg = malloc(sizeof(res_message_t));
   if (msg) {
     msg->is_error = false;
+    msg->u.error = NULL;
+    msg->u.msg = NULL;
     return msg;
   }
   return NULL;
@@ -400,6 +402,7 @@ int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_m
   int ret = -1;
   iota_str_t *cmd = NULL;
   http_response_t http_res;
+  memset(&http_res, 0, sizeof(http_response_t));
   http_handle_t http_handle;
 
   if (conf == NULL || msg_id == NULL || res == NULL) {

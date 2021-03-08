@@ -11,6 +11,7 @@
 int get_tips(iota_client_conf_t const *conf, res_tips_t *res) {
   int ret = -1;
   http_response_t http_res;
+  memset(&http_res, 0, sizeof(http_response_t));
   char const *const cmd_tips = "api/v1/tips";
   http_handle_t http_handle;
 
@@ -71,8 +72,9 @@ done:
 res_tips_t *res_tips_new(void) {
   res_tips_t *tips = malloc(sizeof(res_tips_t));
   if (tips) {
-    tips->u.tips = NULL;
     tips->is_error = false;
+    tips->u.error = NULL;
+    tips->u.tips = NULL;
     return tips;
   }
   return NULL;

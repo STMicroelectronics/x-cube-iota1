@@ -12,6 +12,7 @@ int get_health(iota_client_conf_t const *conf, bool *health) {
   int ret = -1;
   char const *const cmd_info = "health";
   http_response_t http_res;
+  memset(&http_res, 0, sizeof(http_response_t));
   http_handle_t http_handle;
 
   // compose restful api command
