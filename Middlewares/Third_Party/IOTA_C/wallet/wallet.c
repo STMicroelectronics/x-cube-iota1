@@ -298,7 +298,7 @@ int wallet_balance_by_address(iota_wallet_t* w, byte_t const addr[], uint64_t* b
   }
 
   if (get_balance(&w->endpoint, hex_addr, bal_res)) {
-    printf("[%s:%d] Err: ge balance API failed\n", __func__, __LINE__);
+    printf("[%s:%d] Err: get balance API failed\n", __func__, __LINE__);
     if (bal_res->is_error) {
       printf("Err response: %s\n", bal_res->u.error->msg);
     }
