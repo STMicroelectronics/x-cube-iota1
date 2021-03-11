@@ -1727,7 +1727,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/client/api</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1771,7 +1771,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/client/api/v1</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1919,7 +1919,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/core</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1951,7 +1951,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/core/models</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1971,7 +1971,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/core/models/inputs</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1991,7 +1991,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/core/models/outputs</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -2011,7 +2011,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/core/models/payloads</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -2043,7 +2043,7 @@
 
   <Group>
     <GroupName>Middlewares/Third_Party/IOTA_C/core/utils</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

@@ -139,7 +139,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/Unity"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/utash"/>
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/uthash"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Drivers/CMSIS/Device/ST/STM32L4xx/Include"/>
                                     									

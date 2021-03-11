@@ -374,7 +374,7 @@
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\IOTA_C\wallet</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\libsodium\include</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\Unity</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\utash</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\uthash</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L4xx\Include</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Drivers\CMSIS\Include</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Drivers\STM32L4xx_HAL_Driver\Inc</state>
