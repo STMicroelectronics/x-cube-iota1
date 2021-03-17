@@ -10,7 +10,7 @@
     <aExt>*.s*; *.src; *.a*</aExt>
     <oExt>*.obj; *.o</oExt>
     <lExt>*.lib</lExt>
-    <tExt>*.txt; *.h; *.inc</tExt>
+    <tExt>*.txt; *.h; *.inc; *.md</tExt>
     <pExt>*.plm</pExt>
     <CppX>*.cpp</CppX>
     <nMigrate>0</nMigrate>
@@ -690,7 +690,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01.c</PathWithFileName>
       <FilenameWithoutPath>stm32l475e_iot01.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -702,7 +702,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01_bus.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01_bus.c</PathWithFileName>
       <FilenameWithoutPath>stm32l475e_iot01_bus.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -714,7 +714,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01_env_sensors.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01_env_sensors.c</PathWithFileName>
       <FilenameWithoutPath>stm32l475e_iot01_env_sensors.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -726,7 +726,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01_motion_sensors.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01_motion_sensors.c</PathWithFileName>
       <FilenameWithoutPath>stm32l475e_iot01_motion_sensors.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -746,7 +746,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\es_wifi\es_wifi.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\es_wifi\es_wifi.c</PathWithFileName>
       <FilenameWithoutPath>es_wifi.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -758,7 +758,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\hts221\hts221.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\hts221\hts221.c</PathWithFileName>
       <FilenameWithoutPath>hts221.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -770,7 +770,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\hts221\hts221_reg.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\hts221\hts221_reg.c</PathWithFileName>
       <FilenameWithoutPath>hts221_reg.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -782,7 +782,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\lis3mdl\lis3mdl.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\lis3mdl\lis3mdl.c</PathWithFileName>
       <FilenameWithoutPath>lis3mdl.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -794,7 +794,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\lis3mdl\lis3mdl_reg.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\lis3mdl\lis3mdl_reg.c</PathWithFileName>
       <FilenameWithoutPath>lis3mdl_reg.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -806,7 +806,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\lps22hb\lps22hb.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\lps22hb\lps22hb.c</PathWithFileName>
       <FilenameWithoutPath>lps22hb.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -818,7 +818,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\lps22hb\lps22hb_reg.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\lps22hb\lps22hb_reg.c</PathWithFileName>
       <FilenameWithoutPath>lps22hb_reg.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -830,7 +830,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\lsm6dsl\lsm6dsl.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\lsm6dsl\lsm6dsl.c</PathWithFileName>
       <FilenameWithoutPath>lsm6dsl.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -842,7 +842,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\lsm6dsl\lsm6dsl_reg.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\lsm6dsl\lsm6dsl_reg.c</PathWithFileName>
       <FilenameWithoutPath>lsm6dsl_reg.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -854,7 +854,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api.c</PathWithFileName>
       <FilenameWithoutPath>vl53l0x_api.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -866,7 +866,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_calibration.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_calibration.c</PathWithFileName>
       <FilenameWithoutPath>vl53l0x_api_calibration.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -878,7 +878,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_core.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_core.c</PathWithFileName>
       <FilenameWithoutPath>vl53l0x_api_core.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -890,7 +890,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_ranging.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_ranging.c</PathWithFileName>
       <FilenameWithoutPath>vl53l0x_api_ranging.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -902,7 +902,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_strings.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_strings.c</PathWithFileName>
       <FilenameWithoutPath>vl53l0x_api_strings.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -914,7 +914,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_platform_log.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_platform_log.c</PathWithFileName>
       <FilenameWithoutPath>vl53l0x_platform_log.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>

@@ -79,11 +79,17 @@
                                     									
                                     <listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>
                                     									
+                                    <listOptionValue builtIn="false" value="SENSOR"/>
+                                    									
                                     <listOptionValue builtIn="false" value="USE_WIFI"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="__BYTE_ORDER__=__ORDER_LITTLE_ENDIAN__"/>
                                     									
                                     <listOptionValue builtIn="false" value="MBEDTLS_CONFIG_FILE=&lt;mbedtls_config.h&gt;"/>
                                     									
                                     <listOptionValue builtIn="false" value="STM32L4S5xx"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="CRYPTO_USE_SODIUM"/>
                                     								
                                 </option>
                                 								
@@ -99,17 +105,29 @@
                                     									
                                     <listOptionValue builtIn="false" value="../../Inc/Wallet"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
+                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/BSP/B-L475E-IOT01"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/BSP/Components/es_wifi"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/BSP/Components/vl53l0x"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/CMSIS/Device/ST/STM32L4xx/Include"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/CMSIS/Include"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/STM32L4xx_HAL_Driver/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/ST/STM32_Connect_Library/Includes"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/cJSON"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/FreeRTOS/Source"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/FreeRTOS/Source/include"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/FreeRTOS/Source"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/cJSON"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/tinyhttp"/>
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/IOTA_C/client"/>
                                     									
@@ -137,25 +155,13 @@
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/libsodium/include"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/mbedTLS/include"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/tinyhttp"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/Unity"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/uthash"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/CMSIS/Device/ST/STM32L4xx/Include"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/CMSIS/Include"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/STM32L4xx_HAL_Driver/Inc"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/BSPv2/B-L475E-IOT01"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/ST/STM32_Connect_Library/Includes"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Middlewares/Third_Party/mbedTLS/include"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/BSPv2/Components/es_wifi"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../../../../../../Drivers/BSPv2/Components/vl53l0x"/>
                                     								
                                 </option>
                                 								

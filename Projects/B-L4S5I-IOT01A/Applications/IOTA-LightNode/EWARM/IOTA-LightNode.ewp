@@ -2,29 +2,29 @@
 <project>
     <fileVersion>3</fileVersion>
     <configuration>
-        <name>IOTA-LightNode</name>
+        <name>IOTA-LightNode_SODIUM</name>
         <toolchain>
             <name>ARM</name>
         </toolchain>
-        <debug>0</debug>
+        <debug>1</debug>
         <settings>
             <name>General</name>
             <archiveVersion>3</archiveVersion>
             <data>
                 <version>31</version>
                 <wantNonLocal>1</wantNonLocal>
-                <debug>0</debug>
+                <debug>1</debug>
                 <option>
                     <name>ExePath</name>
-                    <state>IOTA-LightNode/Exe</state>
+                    <state>IOTA-LightNode_SODIUM\Exe</state>
                 </option>
                 <option>
                     <name>ObjPath</name>
-                    <state>IOTA-LightNode/Obj</state>
+                    <state>IOTA-LightNode_SODIUM\Obj</state>
                 </option>
                 <option>
                     <name>ListPath</name>
-                    <state>IOTA-LightNode/List</state>
+                    <state>IOTA-LightNode_SODIUM\List</state>
                 </option>
                 <option>
                     <name>GEndianMode</name>
@@ -217,14 +217,17 @@
             <data>
                 <version>36</version>
                 <wantNonLocal>1</wantNonLocal>
-                <debug>0</debug>
+                <debug>1</debug>
                 <option>
                     <name>CCDefines</name>
                     <state>STM32L4S5xx</state>
                     <state>USE_HAL_DRIVER</state>
                     <state>SENSOR</state>
+                    <state>__ORDER_LITTLE_ENDIAN__=1</state>
+                    <state>__BYTE_ORDER__=__ORDER_LITTLE_ENDIAN__</state>
                     <state>MBEDTLS_CONFIG_FILE=&lt;mbedtls_config.h&gt;</state>
                     <state>USE_WIFI</state>
+                    <state>CRYPTO_USE_SODIUM</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>
@@ -349,17 +352,23 @@
                 </option>
                 <option>
                     <name>CCIncludePath2</name>
-                    <state>$PROJ_DIR$/../Inc</state>
-                    <state>$PROJ_DIR$/../Inc/Time</state>
-                    <state>$PROJ_DIR$/../Inc/Tests</state>
-                    <state>$PROJ_DIR$/../Inc/Utils</state>
-                    <state>$PROJ_DIR$/../Inc/Wallet</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\FreeRTOS\Source\portable\IAR\ARM_CM4F</state>
+                    <state>$PROJ_DIR$\..\Inc</state>
+                    <state>$PROJ_DIR$\..\Inc\Time</state>
+                    <state>$PROJ_DIR$\..\Inc\Tests</state>
+                    <state>$PROJ_DIR$\..\Inc\Utils</state>
+                    <state>$PROJ_DIR$\..\Inc\Wallet</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\B-L475E-IOT01</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\es_wifi</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L4xx\Include</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\CMSIS\Include</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\STM32L4xx_HAL_Driver\Inc</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\ST\STM32_Connect_Library\Includes</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\cJSON</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\FreeRTOS\Source</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\FreeRTOS\Source\include</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\FreeRTOS\Source</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\cJSON</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\tinyhttp</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\FreeRTOS\Source\portable\IAR\ARM_CM4F</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\IOTA_C\client</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\IOTA_C\client\api</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\IOTA_C\client\api\v1</state>
@@ -373,16 +382,10 @@
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\IOTA_C\crypto</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\IOTA_C\wallet</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\libsodium\include</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\include</state>
+                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\tinyhttp</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\Unity</state>
                     <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\uthash</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L4xx\Include</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\CMSIS\Include</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\STM32L4xx_HAL_Driver\Inc</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\ST\STM32_Connect_Library\Includes</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\include</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\es_wifi</state>
-                    <state>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -516,7 +519,7 @@
             <data>
                 <version>10</version>
                 <wantNonLocal>1</wantNonLocal>
-                <debug>0</debug>
+                <debug>1</debug>
                 <option>
                     <name>AObjPrefix</name>
                     <state>1</state>
@@ -679,7 +682,7 @@ $PROJ_DIR$/../Inc</state>
             <data>
                 <version>1</version>
                 <wantNonLocal>1</wantNonLocal>
-                <debug>0</debug>
+                <debug>1</debug>
                 <option>
                     <name>OOCOutputFormat</name>
                     <version>3</version>
@@ -731,7 +734,7 @@ $PROJ_DIR$/../Inc</state>
             <data>
                 <version>23</version>
                 <wantNonLocal>1</wantNonLocal>
-                <debug>0</debug>
+                <debug>1</debug>
                 <option>
                     <name>IlinkAdditionalLibs</name>
                     <state></state>
@@ -1073,7 +1076,7 @@ $PROJ_DIR$/../Inc</state>
             <data>
                 <version>0</version>
                 <wantNonLocal>1</wantNonLocal>
-                <debug>0</debug>
+                <debug>1</debug>
                 <option>
                     <name>IarchiveInputs</name>
                     <state></state>
@@ -1107,13 +1110,13 @@ $PROJ_DIR$/../Inc</state>
             <file>
                 <name>$PROJ_DIR$\..\Src\Tests\test_address.c</name>
                 <excluded>
-                    <configuration>IOTA-LightNode</configuration>
+                    <configuration>IOTA-LightNode_SODIUM</configuration>
                 </excluded>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Src\Tests\test_core.c</name>
                 <excluded>
-                    <configuration>IOTA-LightNode</configuration>
+                    <configuration>IOTA-LightNode_SODIUM</configuration>
                 </excluded>
             </file>
             <file>
@@ -1242,16 +1245,16 @@ $PROJ_DIR$/../Inc</state>
             <group>
                 <name>B-L4S5I-IOT01A</name>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01_bus.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01_bus.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01_env_sensors.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01_env_sensors.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\B-L475E-IOT01\stm32l475e_iot01_motion_sensors.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\B-L475E-IOT01\stm32l475e_iot01_motion_sensors.c</name>
                 </file>
             </group>
             <group>
@@ -1259,64 +1262,64 @@ $PROJ_DIR$/../Inc</state>
                 <group>
                     <name>es_wifi</name>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\es_wifi\es_wifi.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\es_wifi\es_wifi.c</name>
                     </file>
                 </group>
                 <group>
                     <name>HTS221</name>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\hts221\hts221.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\hts221\hts221.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\hts221\hts221_reg.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\hts221\hts221_reg.c</name>
                     </file>
                 </group>
                 <group>
                     <name>LIS3MDL</name>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\lis3mdl\lis3mdl.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\lis3mdl\lis3mdl.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\lis3mdl\lis3mdl_reg.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\lis3mdl\lis3mdl_reg.c</name>
                     </file>
                 </group>
                 <group>
                     <name>LPS22HB</name>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\lps22hb\lps22hb.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\lps22hb\lps22hb.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\lps22hb\lps22hb_reg.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\lps22hb\lps22hb_reg.c</name>
                     </file>
                 </group>
                 <group>
                     <name>LSM6DSL</name>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\lsm6dsl\lsm6dsl.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\lsm6dsl\lsm6dsl.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\lsm6dsl\lsm6dsl_reg.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\lsm6dsl\lsm6dsl_reg.c</name>
                     </file>
                 </group>
                 <group>
                     <name>vl53l0x</name>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_calibration.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_calibration.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_core.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_core.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_ranging.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_ranging.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_api_strings.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_api_strings.c</name>
                     </file>
                     <file>
-                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSPv2\Components\vl53l0x\vl53l0x_platform_log.c</name>
+                        <name>$PROJ_DIR$\..\..\..\..\..\Drivers\BSP\Components\vl53l0x\vl53l0x_platform_log.c</name>
                     </file>
                 </group>
             </group>
@@ -1671,235 +1674,235 @@ $PROJ_DIR$/../Inc</state>
             <group>
                 <name>MbedTLS</name>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\aes.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\aes.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\aesni.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\aesni.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\arc4.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\arc4.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\aria.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\aria.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\asn1parse.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\asn1parse.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\asn1write.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\asn1write.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\base64.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\base64.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\bignum.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\bignum.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\blowfish.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\blowfish.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\camellia.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\camellia.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ccm.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ccm.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\certs.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\certs.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\chacha20.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\chacha20.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\chachapoly.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\chachapoly.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\cipher.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\cipher.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\cipher_wrap.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\cipher_wrap.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\cmac.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\cmac.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ctr_drbg.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ctr_drbg.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\debug.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\debug.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\des.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\des.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\dhm.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\dhm.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ecdh.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ecdh.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ecdsa.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ecdsa.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ecjpake.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ecjpake.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ecp.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ecp.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ecp_curves.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ecp_curves.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\entropy.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\entropy.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\entropy_poll.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\entropy_poll.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\error.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\error.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\gcm.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\gcm.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\havege.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\havege.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\hmac_drbg.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\hmac_drbg.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\md.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\md.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\md2.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\md2.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\md4.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\md4.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\md5.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\md5.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\md_wrap.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\md_wrap.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\memory_buffer_alloc.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\memory_buffer_alloc.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\nist_kw.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\nist_kw.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\oid.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\oid.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\padlock.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\padlock.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pem.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pem.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pk.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pk.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pk_wrap.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pk_wrap.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pkcs11.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pkcs11.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pkcs12.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pkcs12.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pkcs5.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pkcs5.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pkparse.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pkparse.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\pkwrite.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\pkwrite.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\platform.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\platform.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\platform_util.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\platform_util.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\poly1305.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\poly1305.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ripemd160.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ripemd160.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\rsa.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\rsa.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\rsa_internal.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\rsa_internal.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\sha1.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\sha1.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\sha256.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\sha256.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\sha512.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\sha512.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_cache.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_cache.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_ciphersuites.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_ciphersuites.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_cli.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_cli.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_cookie.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_cookie.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_srv.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_srv.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_ticket.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_ticket.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\ssl_tls.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\ssl_tls.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\threading.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\threading.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\timing.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\timing.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\version.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\version.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\version_features.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\version_features.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509_create.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509_create.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509_crl.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509_crl.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509_crt.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509_crt.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509_csr.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509_csr.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509write_crt.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509write_crt.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\x509write_csr.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\x509write_csr.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\mbedTLS\library\xtea.c</name>
+                    <name>$PROJ_DIR$\..\..\..\..\..\Middlewares\Third_Party\MbedTLS\library\xtea.c</name>
                 </file>
             </group>
             <group>
