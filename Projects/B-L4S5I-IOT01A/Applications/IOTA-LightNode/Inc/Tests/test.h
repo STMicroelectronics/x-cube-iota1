@@ -47,14 +47,6 @@ extern "C" {
  * @{
  */
 
-//#define TEST_CRYPTO
-//#define TEST_FIND_MESSAGE
-//#define TEST_GET_BALANCE
-//#define TEST_GET_MESSAGE
-//#define TEST_GET_OUTPUT
-//#define TEST_INFO
-//#define TEST_MESSAGE_BUILDER
-
 #define THROW(x) (void)fprintf(stderr, "EXCEPTION: " #x "\n");           \
                  (void)printf("Error in %s:%d\r\n", __FILE__, __LINE__); \
                   while(true) {};
