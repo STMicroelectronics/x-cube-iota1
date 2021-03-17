@@ -11,10 +11,17 @@
 #include "slip10.h"
 #include "iota_crypto.h"
 
+#ifndef htonl
+#if ((__BYTE_ORDER__) == (__ORDER_LITTLE_ENDIAN__))
+
 #define htonl(x) ( ((x)<<24 & 0xFF000000UL) | \
                    ((x)<< 8 & 0x00FF0000UL) | \
                    ((x)>> 8 & 0x0000FF00UL) | \
                    ((x)>>24 & 0x000000FFUL) )
+#else
+#define htonl(x) (x)
+#endif
+#endif
 
 // creates a new master private extended key for the curve from a seed.
 static void master_key_generation(byte_t seed[], size_t seed_len, slip10_curve_t curve, slip10_key_t* key) {
