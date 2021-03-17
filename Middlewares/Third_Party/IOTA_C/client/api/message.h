@@ -21,7 +21,7 @@ typedef enum {
   MSG_PAYLOAD_TRANSACTION = 0,
   MSG_PAYLOAD_MILESTONE,
   MSG_PAYLOAD_INDEXATION,
-  MSG_PAYLOAD_UNKNOW = -1,
+  MSG_PAYLOAD_UNKNOW
 } msg_payload_type_t;
 
 // TODO update mileestone structure: https://github.com/iotaledger/protocol-rfcs/pull/19
