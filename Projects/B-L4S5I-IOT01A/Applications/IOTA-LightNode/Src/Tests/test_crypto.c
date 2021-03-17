@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "address.h"
 #include "blake2b_data.h"
 #include "iota_crypto.h"
 
@@ -169,6 +170,22 @@ void test_ed25519_signature()
 
 }
 
+void test_address_gen()
+{
+  // address from ed25519 keypair
+  iota_keypair_t seed_keypair;
+  memset(&seed_keypair, 0, sizeof(seed_keypair));
+  byte_t ed_addr[ED25519_ADDRESS_BYTES];
+  memset(ed_addr, 0, sizeof(ed_addr));
+
+  // address from ed25519 public key
+  byte_t seed[IOTA_SEED_BYTES];
+  random_seed(seed);
+  iota_crypto_keypair(seed, &seed_keypair);
+  TEST_ASSERT(address_from_ed25519_pub(seed_keypair.pub, ed_addr) == 0);
+  dump_hex(ed_addr, ED25519_ADDRESS_BYTES);
+}
+
 /*
 void test_ed25519_signature() {
   int read_len = 0;
@@ -204,6 +221,7 @@ int test_crypto(void)
   RUN_TEST(test_hmacsha);
   RUN_TEST(test_blake2b_hash);
   RUN_TEST(test_ed25519_signature);
+  RUN_TEST(test_address_gen);
 
   return UNITY_END();
 }
