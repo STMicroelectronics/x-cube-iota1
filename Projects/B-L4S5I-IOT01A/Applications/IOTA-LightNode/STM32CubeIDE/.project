@@ -444,22 +444,22 @@
 		<link>
 			<name>Drivers/BSP/B-L4S5I-IOT01A/stm32l475e_iot01.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/B-L475E-IOT01/stm32l475e_iot01.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/B-L4S5I-IOT01A/stm32l475e_iot01_bus.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/B-L475E-IOT01/stm32l475e_iot01_bus.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_bus.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/B-L4S5I-IOT01A/stm32l475e_iot01_env_sensors.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/B-L475E-IOT01/stm32l475e_iot01_env_sensors.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_env_sensors.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/B-L4S5I-IOT01A/stm32l475e_iot01_motion_sensors.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/B-L475E-IOT01/stm32l475e_iot01_motion_sensors.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_motion_sensors.c</locationURI>
 		</link>
 		<link>
 			<name>Middlewares/Third_Party/FreeRTOS/cmsis_os.c</name>
@@ -909,77 +909,77 @@
 		<link>
 			<name>Drivers/BSP/Components/HTS221/hts221.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/hts221/hts221.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/hts221/hts221.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/HTS221/hts221_reg.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/hts221/hts221_reg.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/hts221/hts221_reg.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/LIS3MDL/lis3mdl.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/lis3mdl/lis3mdl.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/lis3mdl/lis3mdl.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/LIS3MDL/lis3mdl_reg.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/lis3mdl/lis3mdl_reg.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/lis3mdl/lis3mdl_reg.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/LPS22HB/lps22hb.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/lps22hb/lps22hb.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/lps22hb/lps22hb.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/LPS22HB/lps22hb_reg.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/lps22hb/lps22hb_reg.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/lps22hb/lps22hb_reg.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/LSM6DSL/lsm6dsl.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/lsm6dsl/lsm6dsl.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/lsm6dsl/lsm6dsl.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/LSM6DSL/lsm6dsl_reg.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/lsm6dsl/lsm6dsl_reg.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/lsm6dsl/lsm6dsl_reg.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/es_wifi/es_wifi.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/es_wifi/es_wifi.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/es_wifi/es_wifi.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/vl53l0x/vl53l0x_api.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/vl53l0x/vl53l0x_api.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/vl53l0x/vl53l0x_api.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/vl53l0x/vl53l0x_api_calibration.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/vl53l0x/vl53l0x_api_calibration.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/vl53l0x/vl53l0x_api_calibration.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/vl53l0x/vl53l0x_api_core.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/vl53l0x/vl53l0x_api_core.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/vl53l0x/vl53l0x_api_core.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/vl53l0x/vl53l0x_api_ranging.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/vl53l0x/vl53l0x_api_ranging.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/vl53l0x/vl53l0x_api_ranging.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/vl53l0x/vl53l0x_api_strings.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/vl53l0x/vl53l0x_api_strings.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/vl53l0x/vl53l0x_api_strings.c</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/Components/vl53l0x/vl53l0x_platform_log.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSPv2/Components/vl53l0x/vl53l0x_platform_log.c</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/Drivers/BSP/Components/vl53l0x/vl53l0x_platform_log.c</locationURI>
 		</link>
 		<link>
 			<name>Middlewares/ST/STM32_Connect_Library/core/net_address.c</name>
