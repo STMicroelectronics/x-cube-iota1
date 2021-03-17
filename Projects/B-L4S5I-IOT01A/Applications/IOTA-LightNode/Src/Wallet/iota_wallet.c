@@ -36,6 +36,33 @@
 /* Private function prototypes -----------------------------------------------*/
 
 /* Functions Definition ------------------------------------------------------*/
+
+int iota_rng_raw( void *data, uint8_t *output, size_t len)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  uint32_t random_number = 0;
+
+  for (int i = 0; i < ((len + sizeof(uint32_t) - 1) / sizeof(uint32_t)); i++)
+  {
+    /* Data shall contain the pointer to the selected hrng instance */
+    status = HAL_RNG_GenerateRandomNumber(data, &random_number);
+    if (HAL_OK == status)
+    {
+      int jmax = ((len - i * sizeof(uint32_t)) >= sizeof(uint32_t)) ? sizeof(uint32_t) : len % sizeof(uint32_t);
+      for (int j = 0; j < jmax; j++)
+      {
+        output[i * sizeof(uint32_t) + j] = ((uint8_t *) &random_number)[j];
+      }
+    }
+    else
+    {
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
 /**
  * @brief  Require Root Certificate for TLS.
  * @param  None
