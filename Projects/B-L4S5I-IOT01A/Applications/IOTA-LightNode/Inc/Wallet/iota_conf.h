@@ -45,12 +45,12 @@ extern "C" {
  */
 
 /* Exported constants---------------------------------------------------------*/
-#define FW_VERSION_MAJOR 1
-#define FW_VERSION_MINOR 1
+#define FW_VERSION_MAJOR 2
+#define FW_VERSION_MINOR 0
 #define FW_VERSION_PATCH 0
-#define FW_VERSION_DATE "30-11-2020 12:00:00 PM"
+#define FW_VERSION_DATE "DD-MM-2021 12:00:00 PM"
 
-#define FW_VERSION_NAME   "FP-SNS-IOTA1"
+#define FW_VERSION_NAME "X-CUBE-IOTA1"
 
 #include <stdio.h>
 #define iota_printf (void)printf

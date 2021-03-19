@@ -216,9 +216,8 @@ int platform_init(void)
 
   printf("\n");
   printf("*************************************************************\n");
-  printf("***   STM32 IoT Discovery kit for\n");
-  printf("***      STM32F413/STM32F769/STM32L475/STM32L496 MCU\n");
-  printf("***   %s Cloud Connectivity Demonstration\n", FW_VERSION_NAME);
+  printf("***   STM32 IoT Discovery kit for STM32L4S5 MCU\n");
+  printf("***   %s IOTA Light Node Demonstration\n", FW_VERSION_NAME);
   printf("***   FW version: %d.%d.%d - %s\n",
          FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_PATCH, FW_VERSION_DATE);
   printf("*************************************************************\n");
