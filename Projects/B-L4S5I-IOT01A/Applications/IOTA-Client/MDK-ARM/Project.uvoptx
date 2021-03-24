@@ -22,7 +22,7 @@
   </DaveTm>
 
   <Target>
-    <TargetName>IOTA-LightNode</TargetName>
+    <TargetName>IOTA-Client</TargetName>
     <ToolsetNumber>0x4</ToolsetNumber>
     <ToolsetName>ARM-ADS</ToolsetName>
     <TargetOption>

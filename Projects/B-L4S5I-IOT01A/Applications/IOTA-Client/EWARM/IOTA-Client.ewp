@@ -2,7 +2,7 @@
 <project>
     <fileVersion>3</fileVersion>
     <configuration>
-        <name>IOTA-LightNode_SODIUM</name>
+        <name>IOTA-Client_SODIUM</name>
         <toolchain>
             <name>ARM</name>
         </toolchain>
@@ -16,15 +16,15 @@
                 <debug>1</debug>
                 <option>
                     <name>ExePath</name>
-                    <state>IOTA-LightNode_SODIUM\Exe</state>
+                    <state>IOTA-Client_SODIUM\Exe</state>
                 </option>
                 <option>
                     <name>ObjPath</name>
-                    <state>IOTA-LightNode_SODIUM\Obj</state>
+                    <state>IOTA-Client_SODIUM\Obj</state>
                 </option>
                 <option>
                     <name>ListPath</name>
-                    <state>IOTA-LightNode_SODIUM\List</state>
+                    <state>IOTA-Client_SODIUM\List</state>
                 </option>
                 <option>
                     <name>GEndianMode</name>
@@ -694,7 +694,7 @@ $PROJ_DIR$/../Inc</state>
                 </option>
                 <option>
                     <name>OOCOutputFile</name>
-                    <state>IOTA-LightNode.bin</state>
+                    <state>IOTA-Client.bin</state>
                 </option>
                 <option>
                     <name>OOCCommandLineProducer</name>
@@ -753,7 +753,7 @@ $PROJ_DIR$/../Inc</state>
                 </option>
                 <option>
                     <name>IlinkOutputFile</name>
-                    <state>IOTA-LightNode.out</state>
+                    <state>IOTA-Client.out</state>
                 </option>
                 <option>
                     <name>IlinkDebugInfoEnable</name>
@@ -1110,13 +1110,13 @@ $PROJ_DIR$/../Inc</state>
             <file>
                 <name>$PROJ_DIR$\..\Src\Tests\test_address.c</name>
                 <excluded>
-                    <configuration>IOTA-LightNode_SODIUM</configuration>
+                    <configuration>IOTA-Client_SODIUM</configuration>
                 </excluded>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Src\Tests\test_core.c</name>
                 <excluded>
-                    <configuration>IOTA-LightNode_SODIUM</configuration>
+                    <configuration>IOTA-Client_SODIUM</configuration>
                 </excluded>
             </file>
             <file>

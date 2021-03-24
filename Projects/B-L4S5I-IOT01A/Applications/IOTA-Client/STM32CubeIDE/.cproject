@@ -57,7 +57,7 @@
                             							
                             <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.targetplatform.1718406253" isAbstract="false" osList="all" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.targetplatform"/>
                             							
-                            <builder buildPath="${workspace_loc:/IOTA-LightNode}/Debug" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.builder.883256687" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.builder"/>
+                            <builder buildPath="${workspace_loc:/IOTA-Client}/Debug" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.builder.883256687" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.builder"/>
                             							
                             <tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.1879200870" name="MCU GCC Assembler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler">
                                 								
@@ -253,7 +253,7 @@
     	
     <storageModule moduleId="cdtBuildSystem" version="4.0.0">
         		
-        <project id="IOTA-LightNode.null.2055552451" name="IOTA-LightNode"/>
+        <project id="IOTA-Client.null.2055552451" name="IOTA-Client"/>
         	
     </storageModule>
     	
@@ -295,7 +295,7 @@
         		
         <configuration configurationName="Debug">
             			
-            <resource resourceType="PROJECT" workspacePath="/IOTA-LightNode"/>
+            <resource resourceType="PROJECT" workspacePath="/IOTA-Client"/>
             		
         </configuration>
         	

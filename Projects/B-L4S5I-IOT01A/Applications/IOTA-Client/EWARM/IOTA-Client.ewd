@@ -2,7 +2,7 @@
 <project>
     <fileVersion>3</fileVersion>
     <configuration>
-        <name>IOTA-LightNode_SODIUM</name>
+        <name>IOTA-Client_SODIUM</name>
         <toolchain>
             <name>ARM</name>
         </toolchain>
