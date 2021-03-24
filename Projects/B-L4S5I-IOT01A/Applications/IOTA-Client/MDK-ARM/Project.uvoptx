@@ -22,7 +22,7 @@
   </DaveTm>
 
   <Target>
-    <TargetName>IOTA-Client</TargetName>
+    <TargetName>IOTA-Client_SODIUM</TargetName>
     <ToolsetNumber>0x4</ToolsetNumber>
     <ToolsetName>ARM-ADS</ToolsetName>
     <TargetOption>
