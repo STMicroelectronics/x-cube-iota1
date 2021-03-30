@@ -43,7 +43,7 @@ extern "C" {
  *
  * @return utxo_inputs_t* a NULL pointer
  */
-static utxo_input_ht *utxo_inputs_new() { return NULL; }
+utxo_input_ht *utxo_inputs_new(void);
 
 /**
  * @brief Find an utxo input by a given transaction ID
@@ -52,11 +52,7 @@ static utxo_input_ht *utxo_inputs_new() { return NULL; }
  * @param[in] tx_id A transaction ID
  * @return utxo_input_ht*
  */
-static utxo_input_ht *utxo_inputs_find_by_id(utxo_input_ht **inputs, byte_t const tx_id[]) {
-  utxo_input_ht *in = NULL;
-  HASH_FIND(hh, *inputs, tx_id, TRANSACTION_ID_BYTES, in);
-  return in;
-}
+utxo_input_ht *utxo_inputs_find_by_id(utxo_input_ht **inputs, byte_t const tx_id[]);
 
 /**
  * @brief Get the size of utxo inputs
@@ -64,20 +60,14 @@ static utxo_input_ht *utxo_inputs_find_by_id(utxo_input_ht **inputs, byte_t cons
  * @param[in] ht An utxo input hash table.
  * @return uint16_t
  */
-static uint16_t utxo_inputs_count(utxo_input_ht **ht) { return (uint16_t)HASH_COUNT(*ht); }
+uint16_t utxo_inputs_count(utxo_input_ht **ht);
 
 /**
  * @brief Free an utxo input hash table.
  *
  * @param[in] utxo_ins An utxo input hash table.
  */
-static void utxo_inputs_free(utxo_input_ht **ht) {
-  utxo_input_ht *curr_elm, *tmp;
-  HASH_ITER(hh, *ht, curr_elm, tmp) {
-    HASH_DEL(*ht, curr_elm);
-    free(curr_elm);
-  }
-}
+void utxo_inputs_free(utxo_input_ht **ht);
 
 /**
  * @brief Append an utxo input element to the list.

@@ -50,6 +50,7 @@ static int validate_bip44_path(char const path[]) {
 
     // get value
     unsigned long value = strtoul(token, &ptr, 10);
+    (void)value;
 
     // hardened
     if (!(strncmp(ptr, "\'", 1) == 0 || strncmp(ptr, "H", 1) == 0)) {

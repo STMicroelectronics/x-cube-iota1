@@ -49,7 +49,7 @@ extern "C" {
  *
  * @return outputs_ht* a NULL pointer
  */
-static outputs_ht *utxo_outputs_new() { return NULL; }
+outputs_ht *utxo_outputs_new(void);
 
 /**
  * @brief Find an utxo output by a given address
@@ -58,11 +58,7 @@ static outputs_ht *utxo_outputs_new() { return NULL; }
  * @param[in] addr An address for searching
  * @return outputs_ht*
  */
-static outputs_ht *utxo_outputs_find_by_addr(outputs_ht **ht, byte_t addr[]) {
-  outputs_ht *elm = NULL;
-  HASH_FIND(hh, *ht, addr, ED25519_ADDRESS_BYTES, elm);
-  return elm;
-}
+outputs_ht *utxo_outputs_find_by_addr(outputs_ht **ht, byte_t addr[]);
 
 /**
  * @brief Get the size of utxo outputs
@@ -70,20 +66,14 @@ static outputs_ht *utxo_outputs_find_by_addr(outputs_ht **ht, byte_t addr[]) {
  * @param[in] ht An utxo output hash table.
  * @return uint16_t
  */
-static uint16_t utxo_outputs_count(outputs_ht **ht) { return (uint16_t)HASH_COUNT(*ht); }
+uint16_t utxo_outputs_count(outputs_ht **ht);
 
 /**
  * @brief Free an utxo output hash table.
  *
  * @param[in] utxo_ins An utxo output hash table.
  */
-static void utxo_outputs_free(outputs_ht **ht) {
-  outputs_ht *curr_elm, *tmp;
-  HASH_ITER(hh, *ht, curr_elm, tmp) {
-    HASH_DEL(*ht, curr_elm);
-    free(curr_elm);
-  }
-}
+void utxo_outputs_free(outputs_ht **ht);
 
 /**
  * @brief Append an utxo output element to the table.
