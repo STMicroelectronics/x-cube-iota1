@@ -15,7 +15,7 @@
 
 // TODO: move to utils?
 // validate path: m/44',/4128',/Account',/Change'
-static int validate_pib44_path(char const path[]) {
+static int validate_bip44_path(char const path[]) {
   int ret = -1;
   char tmp_path[IOTA_ACCOUNT_PATH_MAX];
   memset(tmp_path, 0, sizeof(tmp_path));
@@ -234,7 +234,7 @@ iota_wallet_t* wallet_create(byte_t const seed[], char const path[]) {
     return NULL;
   }
 
-  if (validate_pib44_path(path)) {
+  if (validate_bip44_path(path)) {
     return NULL;
   }
 

@@ -39,7 +39,7 @@ typedef struct {
 } iota_wallet_t;
 
 /**
- * @brief Create a wallet account based on given seed and PIB44 path
+ * @brief Create a wallet account based on given seed and BIP44 path
  *
  * The path is an IOTA path of BIP-44 derivation paths, it should start with m/44'/4218'
  * https://github.com/satoshilabs/slips/blob/master/slip-0044.md

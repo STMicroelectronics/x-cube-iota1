@@ -9,7 +9,7 @@
 #include "types.h"
 
 #define BIP32_HARDENED (1UL << 31)
-#define MAX_PIB32_PATH 32
+#define MAX_BIP32_PATH 32
 #define SLIP10_PUBLIC_KEY_BYTES 33
 #define SLIP10_PRIVATE_KEY_BYTES 32
 #define SLIP10_CHAIN_CODE_BYTES 32
@@ -22,7 +22,7 @@ typedef struct {
 } slip10_key_t;
 
 typedef struct {
-  uint32_t path[MAX_PIB32_PATH];
+  uint32_t path[MAX_BIP32_PATH];
   int len;
 } bip32_path_t;
 
