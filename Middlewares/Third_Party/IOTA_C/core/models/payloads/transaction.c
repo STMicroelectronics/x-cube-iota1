@@ -389,7 +389,7 @@ size_t tx_payload_serialize_length(transaction_payload_t* tx) {
 
 size_t tx_payload_serialize(transaction_payload_t* tx, byte_t buf[]) {
   if (tx == NULL) {
-    return -1;
+    return 0;
   }
 
   byte_t* offset = buf;
