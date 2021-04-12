@@ -21,6 +21,34 @@
 #ifndef VL53L0X_PROXIMITY_H
 #define VL53L0X_PROXIMITY_H
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+   
+/** @addtogroup PROJECTS
+ * @{
+ */
+
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+
+/** @addtogroup APPLICATIONS
+ * @{
+ */
+
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @defgroup VL53l0x_Proximity VL53l0x Proximity
+ * @{
+ */
+
+/** @defgroup VL53l0x_Proximity_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
 /* Defines -------------------------------------------------------------------*/
 #define PROXIMITY_I2C_ADDRESS         ((uint16_t)0x0052)
 #define VL53L0X_ID                    ((uint16_t)0xEEAA)
@@ -31,5 +59,34 @@ void VL53L0X_PROXIMITY_MspInit(void);
 uint16_t VL53L0X_PROXIMITY_GetDistance(void);
 void VL53L0X_PROXIMITY_Init(void);
 
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* VL53L0X_PROXIMITY_H */
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

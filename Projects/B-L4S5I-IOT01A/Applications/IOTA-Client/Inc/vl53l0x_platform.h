@@ -30,6 +30,30 @@
 #include "vl53l0x_def.h"
 #include "vl53l0x_platform_log.h"
 
+/** @addtogroup PROJECTS
+ * @{
+ */
+
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+
+/** @addtogroup APPLICATIONS
+ * @{
+ */
+
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @defgroup VL53l0x_Platform VL53l0x Platform
+ * @{
+ */
+
+/** @defgroup VL53l0x_Platform_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
 /* Exported types ------------------------------------------------------------*/
 /**
  * @struct  VL53L0X_Dev_t
@@ -73,7 +97,6 @@ typedef VL53L0X_Dev_t* VL53L0X_DEV;
 /* Exported constants --------------------------------------------------------*/
 /* Exported macros -----------------------------------------------------------*/
 /**
- * @def PALDevDataGet
  * @brief Get ST private structure @a VL53L0X_DevData_t data access
  *
  * @param Dev       Device Handle
@@ -84,7 +107,6 @@ typedef VL53L0X_Dev_t* VL53L0X_DEV;
 #define PALDevDataGet(Dev, field) (Dev->Data.field)
 
 /**
- * @def PALDevDataSet(Dev, field, data)
  * @brief  Set ST private structure @a VL53L0X_DevData_t data field
  * @param Dev       Device Handle
  * @param field     ST structure field name
@@ -97,7 +119,7 @@ typedef VL53L0X_Dev_t* VL53L0X_DEV;
 /* Exported functions --------------------------------------------------------*/
 
 /**
- * Lock comms interface to serialize all commands to a shared I2C interface for a specific device
+ * @brief Lock comms interface to serialize all commands to a shared I2C interface for a specific device
  * @param   Dev       Device Handle
  * @return  VL53L0X_ERROR_NONE        Success
  * @return  "Other error code"    See ::VL53L0X_Error
@@ -105,7 +127,7 @@ typedef VL53L0X_Dev_t* VL53L0X_DEV;
 VL53L0X_Error VL53L0X_LockSequenceAccess(VL53L0X_DEV Dev);
 
 /**
- * Unlock comms interface to serialize all commands to a shared I2C interface for a specific device
+ * @brief Unlock comms interface to serialize all commands to a shared I2C interface for a specific device
  * @param   Dev       Device Handle
  * @return  VL53L0X_ERROR_NONE        Success
  * @return  "Other error code"    See ::VL53L0X_Error
@@ -114,7 +136,7 @@ VL53L0X_Error VL53L0X_UnlockSequenceAccess(VL53L0X_DEV Dev);
 
 
 /**
- * Writes the supplied byte buffer to the device
+ * @brief Writes the supplied byte buffer to the device
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   pdata     Pointer to uint8_t buffer containing the data to be written
@@ -125,7 +147,7 @@ VL53L0X_Error VL53L0X_UnlockSequenceAccess(VL53L0X_DEV Dev);
 VL53L0X_Error VL53L0X_WriteMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata, uint32_t count);
 
 /**
- * Reads the requested number of bytes from the device
+ * @brief Reads the requested number of bytes from the device
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   pdata     Pointer to the uint8_t buffer to store read data
@@ -136,7 +158,7 @@ VL53L0X_Error VL53L0X_WriteMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata,
 VL53L0X_Error VL53L0X_ReadMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata, uint32_t count);
 
 /**
- * Write single byte register
+ * @brief Write single byte register
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   data      8 bit register data
@@ -146,7 +168,7 @@ VL53L0X_Error VL53L0X_ReadMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata, 
 VL53L0X_Error VL53L0X_WrByte(VL53L0X_DEV Dev, uint8_t index, uint8_t data);
 
 /**
- * Write word register
+ * @brief Write word register
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   data      16 bit register data
@@ -156,7 +178,7 @@ VL53L0X_Error VL53L0X_WrByte(VL53L0X_DEV Dev, uint8_t index, uint8_t data);
 VL53L0X_Error VL53L0X_WrWord(VL53L0X_DEV Dev, uint8_t index, uint16_t data);
 
 /**
- * Write double word (4 byte) register
+ * @brief Write double word (4 byte) register
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   data      32 bit register data
@@ -166,7 +188,7 @@ VL53L0X_Error VL53L0X_WrWord(VL53L0X_DEV Dev, uint8_t index, uint16_t data);
 VL53L0X_Error VL53L0X_WrDWord(VL53L0X_DEV Dev, uint8_t index, uint32_t data);
 
 /**
- * Read single byte register
+ * @brief Read single byte register
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   data      pointer to 8 bit data
@@ -176,7 +198,7 @@ VL53L0X_Error VL53L0X_WrDWord(VL53L0X_DEV Dev, uint8_t index, uint32_t data);
 VL53L0X_Error VL53L0X_RdByte(VL53L0X_DEV Dev, uint8_t index, uint8_t *data);
 
 /**
- * Read word (2byte) register
+ * @brief Read word (2byte) register
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   data      pointer to 16 bit data
@@ -186,7 +208,7 @@ VL53L0X_Error VL53L0X_RdByte(VL53L0X_DEV Dev, uint8_t index, uint8_t *data);
 VL53L0X_Error VL53L0X_RdWord(VL53L0X_DEV Dev, uint8_t index, uint16_t *data);
 
 /**
- * Read dword (4byte) register
+ * @brief Read dword (4byte) register
  * @param   Dev       Device Handle
  * @param   index     The register index
  * @param   data      pointer to 32 bit data
@@ -196,7 +218,7 @@ VL53L0X_Error VL53L0X_RdWord(VL53L0X_DEV Dev, uint8_t index, uint16_t *data);
 VL53L0X_Error VL53L0X_RdDWord(VL53L0X_DEV Dev, uint8_t index, uint32_t *data);
 
 /**
- * Threat safe Update (read/modify/write) single byte register
+ * @brief Threat safe Update (read/modify/write) single byte register
  *
  * Final_reg = (Initial_reg & and_data) |or_data
  *
@@ -208,9 +230,6 @@ VL53L0X_Error VL53L0X_RdDWord(VL53L0X_DEV Dev, uint8_t index, uint32_t *data);
  * @return  "Other error code"    See ::VL53L0X_Error
  */
 VL53L0X_Error VL53L0X_UpdateByte(VL53L0X_DEV Dev, uint8_t index, uint8_t AndData, uint8_t OrData);
-
-/** @} end of VL53L0X_registerAccess_group */
-
     
 /**
  * @brief execute delay in all polling API call
@@ -225,6 +244,30 @@ VL53L0X_Error VL53L0X_UpdateByte(VL53L0X_DEV Dev, uint8_t index, uint8_t AndData
  * @return  "Other error code"    See ::VL53L0X_Error
  */
 VL53L0X_Error VL53L0X_PollingDelay(VL53L0X_DEV Dev); /* usually best implemented as a real function */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

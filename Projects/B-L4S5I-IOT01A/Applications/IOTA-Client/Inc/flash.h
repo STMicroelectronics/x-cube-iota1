@@ -29,12 +29,59 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
 
+/** @addtogroup PROJECTS
+ * @{
+ */
+
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+
+/** @addtogroup APPLICATIONS
+ * @{
+ */
+
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @addtogroup FLASH_Config_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
+/**
+  * @brief  Update a chunk of the FLASH memory.
+  * @note   The FLASH chunk must no cross a FLASH bank boundary.
+  * @note   The source and destination buffers have no specific alignment constraints.
+  * @param  In: dst_addr    Destination address in the FLASH memory.
+  * @param  In: data        Source address. 
+  * @param  In: size        Number of bytes to update.
+  * @retval  0:  Success.
+  *        !=0:  Failure.
+  */
 int FLASH_update(uint32_t dst_addr, const void *data, uint32_t size);
 int FLASH_Write(uint32_t uDestination, uint32_t *pSource, uint32_t uLength);
 int FLASH_Erase_Size(uint32_t uStart, uint32_t uLength);
 
+/**
+ * @}
+ */
 
-
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    http_util.h
+  * @file    http_lib.h
   * @author  MCD Application Team
   * @brief   Helper functions for building HTTP GET and POST requests, and 
   *          stream reading.
@@ -46,8 +46,8 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef HTTP_UTIL_H
-#define HTTP_UTIL_H
+#ifndef HTTP_LIB_H
+#define HTTP_LIB_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -60,23 +60,19 @@
 
 #include "byte_buffer.h"
 
-/** @addtogroup PROJECTS
- * @{
- */
- 
-/** @addtogroup APPLICATIONS
+/** @defgroup IOTA_C IOTA_C
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @defgroup CLIENT Client
  * @{
  */
 
-/** @defgroup HTTP_UTIL HTTP Utilities
+/** @defgroup NETWORK Network
  * @{
  */
 
-/** @defgroup HTTP_UTIL_EXPORTED_FUNCTIONS Exported Constants
+/** @defgroup NETWORK_EXPORTED_CONSTANTS Exported Constants
  * @{
  */
 
@@ -90,7 +86,7 @@
  * @}
  */
 
-/** @defgroup HTTP_UTIL_EXPORTED_TYPES Exported Types
+/** @defgroup NETWORK_EXPORTED_TYPES Exported Types
  * @{
  */
 
@@ -113,7 +109,7 @@ typedef struct
  * @}
  */
 
-/** @defgroup HTTP_UTIL_EXPORTED_TYPES Exported Functions
+/** @defgroup NETWORK_EXPORTED_FUNCTIONS Exported Functions
  * @{
  */
 
@@ -160,15 +156,11 @@ void http_req_destroy(const char *req_buf);
  * @}
  */
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HTTP_UTIL_H */
+#endif /* HTTP_LIB_H */
 
 /**
   * @}

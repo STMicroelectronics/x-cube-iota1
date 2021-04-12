@@ -31,11 +31,15 @@ extern "C" {
  * @{
  */
  
-/** @addtogroup APPLICATIONS
+/** @addtogroup B-L4S5I-IOT01A
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @addtogroup APPLICATIONS
+ * @}
+ */
+
+/** @addtogroup IOTA_Client
  * @{
  */
 
@@ -71,6 +75,10 @@ int test_send_message(void);
 __weak int test_core(void) {return 0;}
 
 int test_wallet(void);
+
+/**
+ * @}
+ */
 
 /**
  * @}

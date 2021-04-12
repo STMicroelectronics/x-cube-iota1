@@ -9,6 +9,26 @@
 
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @addtogroup CORE_UTILS
+ * @{
+ */
+
+/** @defgroup BYTEBUFFER Byte Buffer
+ * @{
+ */
+
+/** @defgroup BYTEBUFFER_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
 /**
  * @brief byte buffer object
  *
@@ -19,9 +39,17 @@ typedef struct {
   byte_t* data;  ///< a pointer to the data
 } byte_buf_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+  
+/** @defgroup BYTEBUFFER_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocates data buffer
@@ -169,8 +197,28 @@ int hex2bin(char const str[], size_t str_len, byte_t bin[], size_t bin_len);
  */
 int bin2hex(byte_t const bin[], size_t bin_len, char str_buf[], size_t buf_len);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

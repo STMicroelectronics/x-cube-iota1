@@ -25,7 +25,63 @@
  extern "C" {
 #endif
 
+/** @addtogroup PROJECTS
+ * @{
+ */
+
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+
+/** @addtogroup APPLICATIONS
+ * @{
+ */
+
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @defgroup MbedTLS_Entropy MbedTLS Entropy
+ * @{
+ */
+
+/** @defgroup MbedTLS_Entropy_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
+/**
+  * @brief The random number generator callback.
+  * @param data Entropy context
+  * @param output Buffer to fill
+  * @param len Number of bytes desired
+  * @retval  0:  Success.
+  *        !=0:  Failure.
+  */
 int mbedtls_rng_raw( void *data, unsigned char *output, size_t len );
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

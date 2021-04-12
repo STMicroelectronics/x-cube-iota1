@@ -11,7 +11,35 @@
 #include "response_error.h"
 #include "client_service.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup GET_MESSAGE Get Message
+ * @{
+ */
+
+/** @defgroup GET_MESSAGE_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define IOTA_MESSAGE_ID_HEX_BYTES 64
+
+/**
+ * @}
+ */
+
+/** @defgroup GET_MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief The response of get message
@@ -25,9 +53,17 @@ typedef struct {
   } u;
 } res_message_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup GET_MESSAGE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate a message for API response
@@ -87,8 +123,28 @@ char *get_message_milestone_signature(res_message_t const *const res, size_t ind
  */
 msg_payload_type_t get_message_payload_type(res_message_t const *const res);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

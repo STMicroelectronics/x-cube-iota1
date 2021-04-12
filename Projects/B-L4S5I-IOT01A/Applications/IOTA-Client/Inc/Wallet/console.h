@@ -27,12 +27,16 @@ extern "C" {
 /** @addtogroup PROJECTS
  * @{
  */
+
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
  
 /** @addtogroup APPLICATIONS
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @addtogroup IOTA_Client
  * @{
  */
 
@@ -46,6 +50,10 @@ extern "C" {
 
 /* Exported functions ------------------------------------------------------- */
 int32_t uartReceiveString(char* str, size_t length);
+
+/**
+ * @}
+ */
 
 /**
  * @}

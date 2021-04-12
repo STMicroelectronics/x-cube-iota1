@@ -36,16 +36,20 @@ extern "C" {
 /** @addtogroup APPLICATIONS
  * @{
  */
-
-/** @addtogroup IOTA_LightNode
+ 
+/** @addtogroup B-L4S5I-IOT01A
  * @{
  */
 
-/** @defgroup MESSAGE Message
+/** @addtogroup IOTA_Client
  * @{
  */
 
-/** @addtogroup MESSAGE_EXPORTED_CONSTANTS Exported Constants
+/** @defgroup MESSAGE_LOG Message Log
+ * @{
+ */
+
+/** @addtogroup MESSAGE_LOG_EXPORTED_MACROS Exported Macros
  * @{
  */
 
@@ -203,6 +207,10 @@ extern "C" {
 #else
 #define msg_http_error(...)
 #endif
+
+/**
+ * @}
+ */
 
 /**
  * @}

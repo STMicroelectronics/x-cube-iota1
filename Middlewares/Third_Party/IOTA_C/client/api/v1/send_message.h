@@ -13,6 +13,26 @@
 #include "models_message.h"
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup SEND_MESSAGE Send Message
+ * @{
+ */
+
+/** @defgroup SEND_MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
 /**
  * @brief The response of send message
  *
@@ -25,9 +45,17 @@ typedef struct {
   } u;
 } res_send_message_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup SEND_MESSAGE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Deserialize the response of send_message
@@ -79,8 +107,28 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
  */
 int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg, res_send_message_t* res);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

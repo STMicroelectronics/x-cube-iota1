@@ -52,7 +52,6 @@
 #include "http.h"
 #include "http_lib.h"
 #include "main.h"
-//#include "iota_conf.h"
 #include "msg.h"
 #include "net_connect.h"
 

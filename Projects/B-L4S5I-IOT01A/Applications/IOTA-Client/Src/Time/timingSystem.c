@@ -29,7 +29,7 @@ extern const int yytab[2][12];
 /* Private defines -----------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
-/* Functions Definition ------------------------------------------------------*/
+/* Function Definition -------------------------------------------------------*/
 
 #if defined (__IAR_SYSTEMS_ICC__)
 #if _DLIB_TIME_USES_64

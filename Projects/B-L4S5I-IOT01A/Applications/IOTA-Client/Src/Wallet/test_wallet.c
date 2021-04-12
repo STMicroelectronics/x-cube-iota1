@@ -1,6 +1,11 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
+/**
+ * @brief A simple example of using wallet APIs
+ *
+ */
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>

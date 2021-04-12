@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    es_wifi_io.c
+  * @file    net_conf.c
   * @author  MCD Application Team
   * @brief   This file implements the IO operations to deal with the es-wifi
   *          module. It mainly Inits and Deinits the SPI interface. Send and
@@ -30,31 +30,29 @@
 #include "es_wifi_conf.h"
 #include "net_conf.h"
 
-/* Global variables  --------------------------------------------------------*/
+/* Global variables ----------------------------------------------------------*/
 SPI_HandleTypeDef hspi;
+ES_WIFIObject_t   EsWifiObj;
 
-/* Function  definitions  --------------------------------------------------------*/
-static void SPI_WIFI_MspInit(SPI_HandleTypeDef *hspi);
+/* Private defines -----------------------------------------------------------*/
 
-/* Private define ------------------------------------------------------------*/
-
-#define WIFI_RESET_MODULE()                do{\
-                                               HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_RESET);\
-                                               HAL_Delay(10);\
-                                               HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_SET);\
-                                               HAL_Delay(500);\
-                                             }while(0);
+#define WIFI_RESET_MODULE() do{\
+                              HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_RESET);\
+                              HAL_Delay(10);\
+                              HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_SET);\
+                              HAL_Delay(500);\
+                            }while(0);
 
 
-#define WIFI_ENABLE_NSS()                  do{ \
-                                               HAL_GPIO_WritePin( GPIOE, GPIO_PIN_0, GPIO_PIN_RESET );\
-                                             }while(0);
+#define WIFI_ENABLE_NSS()   do{ \
+                              HAL_GPIO_WritePin( GPIOE, GPIO_PIN_0, GPIO_PIN_RESET );\
+                            }while(0);
 
-#define WIFI_DISABLE_NSS()                 do{ \
-                                               HAL_GPIO_WritePin( GPIOE, GPIO_PIN_0, GPIO_PIN_SET );\
-                                             }while(0);
+#define WIFI_DISABLE_NSS()  do{ \
+                              HAL_GPIO_WritePin( GPIOE, GPIO_PIN_0, GPIO_PIN_SET );\
+                            }while(0);
 
-#define WIFI_IS_CMDDATA_READY()            (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1) == GPIO_PIN_SET)
+#define WIFI_IS_CMDDATA_READY() (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1) == GPIO_PIN_SET)
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -82,27 +80,20 @@ osSemaphoreDef(cmddata_rdy_rising_sem);
 #endif /* WIFI_USE_CMSIS_OS */
 
 /* Private function prototypes -----------------------------------------------*/
-static  int32_t wait_cmddata_rdy_high(int32_t timeout);
-static  int32_t wait_cmddata_rdy_rising_event(int32_t timeout);
-static  int32_t wait_spi_tx_event(int32_t timeout);
-static  int32_t wait_spi_rx_event(int32_t timeout);
-static  void SPI_WIFI_DelayUs(uint32_t);
+static int32_t wait_cmddata_rdy_high(int32_t timeout);
+static int32_t wait_cmddata_rdy_rising_event(int32_t timeout);
+static int32_t wait_spi_tx_event(int32_t timeout);
+static int32_t wait_spi_rx_event(int32_t timeout);
+static void    SPI_WIFI_DelayUs(uint32_t);
 static int8_t  SPI_WIFI_DeInit(void);
 static int8_t  SPI_WIFI_Init(uint16_t mode);
 static int8_t  SPI_WIFI_ResetModule(void);
 static int16_t SPI_WIFI_ReceiveData(uint8_t *pData, uint16_t len, uint32_t timeout);
 static int16_t SPI_WIFI_SendData(uint8_t *pData, uint16_t len, uint32_t timeout);
+static void    SPI_WIFI_MspInit(SPI_HandleTypeDef *hspi);
+
+/* Function definitions ------------------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
-
-
-
-int32_t wifi_probe(void **ll_drv_context);
-
-ES_WIFIObject_t    EsWifiObj;
-
-
-
-
 /*******************************************************************************
                        COM Driver Interface (SPI)
   *******************************************************************************/
@@ -181,7 +172,7 @@ static void SPI_WIFI_MspInit(SPI_HandleTypeDef *hspi)
 /**
   * @brief  Initialize the SPI3
   * @param  None
-  * @retval None
+  * @retval 0 on success; -1 otherwise
   */
 static int8_t SPI_WIFI_Init(uint16_t mode)
 {
@@ -239,7 +230,11 @@ static int8_t SPI_WIFI_Init(uint16_t mode)
   return rc;
 }
 
-
+/**
+  * @brief  Reset the WiFi module
+  * @param  None
+  * @retval 0 on success; -1 otherwise
+  */
 static int8_t SPI_WIFI_ResetModule(void)
 {
   uint32_t tickstart = HAL_GetTick();
@@ -274,7 +269,7 @@ static int8_t SPI_WIFI_ResetModule(void)
 /**
   * @brief  DeInitialize the SPI
   * @param  None
-  * @retval None
+  * @retval 0
   */
 static int8_t SPI_WIFI_DeInit(void)
 {
@@ -289,8 +284,6 @@ static int8_t SPI_WIFI_DeInit(void)
   return 0;
 }
 
-
-
 /**
   * @brief  Receive wifi Data from SPI
   * @param  pdata : pointer to data
@@ -298,8 +291,7 @@ static int8_t SPI_WIFI_DeInit(void)
   * @param  timeout : send timeout in mS
   * @retval Length of received data (payload)
   */
-
-int32_t wait_cmddata_rdy_high(int32_t timeout)
+static int32_t wait_cmddata_rdy_high(int32_t timeout)
 {
   int32_t tickstart = HAL_GetTick();
   while (WIFI_IS_CMDDATA_READY() == 0)
@@ -312,9 +304,7 @@ int32_t wait_cmddata_rdy_high(int32_t timeout)
   return 0;
 }
 
-
-
-int32_t wait_cmddata_rdy_rising_event(int32_t timeout)
+static int32_t wait_cmddata_rdy_rising_event(int32_t timeout)
 {
 #ifdef SEM_WAIT
   return SEM_WAIT(cmddata_rdy_rising_sem, timeout);
@@ -331,7 +321,7 @@ int32_t wait_cmddata_rdy_rising_event(int32_t timeout)
 #endif /* SEM_WAIT */
 }
 
-int32_t wait_spi_rx_event(int32_t timeout)
+static int32_t wait_spi_rx_event(int32_t timeout)
 {
 #ifdef SEM_WAIT
   return SEM_WAIT(spi_rx_sem, timeout);
@@ -348,7 +338,7 @@ int32_t wait_spi_rx_event(int32_t timeout)
 #endif /* SEM_WAIT */
 }
 
-int32_t wait_spi_tx_event(int32_t timeout)
+static int32_t wait_spi_tx_event(int32_t timeout)
 {
 #ifdef SEM_WAIT
   return SEM_WAIT(spi_tx_sem, timeout);
@@ -365,9 +355,7 @@ int32_t wait_spi_tx_event(int32_t timeout)
 #endif /* SEM_WAIT */
 }
 
-
-
-int16_t SPI_WIFI_ReceiveData(uint8_t *pData, uint16_t len, uint32_t timeout)
+static int16_t SPI_WIFI_ReceiveData(uint8_t *pData, uint16_t len, uint32_t timeout)
 {
   int16_t length = 0;
   uint8_t tmp[2];
@@ -421,6 +409,7 @@ int16_t SPI_WIFI_ReceiveData(uint8_t *pData, uint16_t len, uint32_t timeout)
   UNLOCK_SPI();
   return length;
 }
+
 /**
   * @brief  Send wifi Data thru SPI
   * @param  pdata : pointer to data
@@ -428,7 +417,7 @@ int16_t SPI_WIFI_ReceiveData(uint8_t *pData, uint16_t len, uint32_t timeout)
   * @param  timeout : send timeout in mS
   * @retval Length of sent data
   */
-int16_t SPI_WIFI_SendData(uint8_t *pdata,  uint16_t len, uint32_t timeout)
+static int16_t SPI_WIFI_SendData(uint8_t *pdata,  uint16_t len, uint32_t timeout)
 {
   uint8_t Padding[2];
 
@@ -473,11 +462,11 @@ int16_t SPI_WIFI_SendData(uint8_t *pdata,  uint16_t len, uint32_t timeout)
 }
 
 /**
-   * @brief  Delay
+  * @brief  Delay
   * @param  Delay in us
   * @retval None
   */
-void SPI_WIFI_DelayUs(uint32_t n)
+static void SPI_WIFI_DelayUs(uint32_t n)
 {
   volatile        uint32_t ct = 0;
   uint32_t        loop_per_us = 0;
@@ -511,6 +500,31 @@ void SPI_WIFI_DelayUs(uint32_t n)
   return;
 }
 
+/* Public functions ----------------------------------------------------------*/
+void SPI_WIFI_ISR(void)
+{
+  if (cmddata_rdy_rising_event == 1)
+  {
+    SEM_SIGNAL(cmddata_rdy_rising_sem);
+    cmddata_rdy_rising_event = 0;
+  }
+}
+
+int32_t wifi_probe(void **ll_drv_context)
+{
+  if (ES_WIFI_RegisterBusIO(&EsWifiObj,
+                            SPI_WIFI_Init,
+                            SPI_WIFI_DeInit,
+                            HAL_Delay,
+                            SPI_WIFI_SendData,
+                            SPI_WIFI_ReceiveData) == 0)
+  {
+    *ll_drv_context = &EsWifiObj;
+    return 0;
+  }
+  return -1;
+}
+
 /**
   * @brief Rx Transfer completed callback.
   * @param  hspi: pointer to a SPI_HandleTypeDef structure that contains
@@ -542,56 +556,4 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
   }
 }
 
-
-/**
-  * @brief  Interrupt handler for  Data RDY signal
-  * @param  None
-  * @retval None
-  */
-void    SPI_WIFI_ISR(void)
-{
-  if (cmddata_rdy_rising_event == 1)
-  {
-    SEM_SIGNAL(cmddata_rdy_rising_sem);
-    cmddata_rdy_rising_event = 0;
-  }
-}
-
-/**
-  * @brief  probe function to register wifi to connectivity framwotk
-  * @param  None
-  * @retval None
-  */
-int32_t wifi_probe(void **ll_drv_context)
-{
-  if (ES_WIFI_RegisterBusIO(&EsWifiObj,
-                            SPI_WIFI_Init,
-                            SPI_WIFI_DeInit,
-                            HAL_Delay,
-                            SPI_WIFI_SendData,
-                            SPI_WIFI_ReceiveData) == 0)
-  {
-    *ll_drv_context = &EsWifiObj;
-    return 0;
-  }
-  return -1;
-}
-
-
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

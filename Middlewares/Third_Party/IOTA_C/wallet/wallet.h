@@ -20,13 +20,33 @@
 #include "seed.h"
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @defgroup WALLET Wallet
+ * @{
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** @defgroup WALLET_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 // max length of m/44'/4218'/Account'/Change'
 #define IOTA_ACCOUNT_PATH_MAX 128
 static char const* const iota_bip44_prefix = "m/44'/4218'";
+
+/**
+ * @}
+ */
+
+/** @defgroup WALLET_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief IOTA wallet setting
@@ -37,6 +57,14 @@ typedef struct {
   char account[IOTA_ACCOUNT_PATH_MAX];  ///< store Bip44 Paths: m/44'/4128'/Account'/Change'
   iota_client_conf_t endpoint;          ///< IOTA node endpoint
 } iota_wallet_t;
+
+/**
+ * @}
+ */
+
+/** @defgroup WALLET_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Create a wallet account based on given seed and BIP44 path
@@ -114,8 +142,20 @@ int wallet_send(iota_wallet_t* w, uint32_t sender_index, byte_t receiver[], uint
  */
 void wallet_destroy(iota_wallet_t* w);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

@@ -1,18 +1,17 @@
 /**
   ******************************************************************************
-  * @file    main.c
-  * @author  MCD Application Team
-  * @brief   Main program body.
+  * @file   main.c
+  * @author SRA/Central LAB
+  * @brief  Main program body.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright (c) 2019-2021 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
+  * This software component is licensed by ST under SLA0055, the "License";
+  * You may not use this file except in compliance with the License. 
+  * You may obtain a copy of the License at www.st.com
   *
   ******************************************************************************
   */
@@ -109,8 +108,6 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
-
-
 void SystemClock_Config( void )
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -194,9 +191,6 @@ void SystemClock_Config( void )
   HAL_RCCEx_EnableMSIPLLMode();
 }
 
-
-
-
 /**
   * @brief Set LED state
   */
@@ -211,7 +205,6 @@ void Led_SetState(bool on)
     BSP_LED_Off(LED_GREEN);
   }
 }
-
 
 /**
  * @brief Blink LED for 'count' cycles of 'period' period and 'duty' ON duration.
@@ -252,7 +245,6 @@ static void Button_ISR(void)
 {
   button_flags++;
 }
-
 
 /**
   * @brief Waiting for button to be pushed
@@ -301,7 +293,6 @@ uint8_t Button_WaitForMultiPush(uint32_t delay)
   }
   return BP_NOT_PUSHED;
 }
-
 
 /**
   * @brief UART console init function
@@ -412,7 +403,6 @@ static void RTC_Init(void)
   /* USER CODE END RTC_Init 2 */
 }
 
-
 /**
   * @brief  EXTI line detection callback.
   * @param  GPIO_Pin: Specifies the port pin connected to corresponding EXTI line.
@@ -439,11 +429,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
 }
 
-
+/**
+  * @brief  Handles WiFi SPI IRQ.
+  * @param  None
+  * @retval None
+  */
 void SPI3_IRQHandler(void)
 {
   HAL_SPI_IRQHandler(&hspi);
 }
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  None
@@ -475,7 +470,6 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
   NET_ASSERT(0,"Failed:Run out of stack ");
 }
 #endif
-
 
 /**
  * @brief  Start Thread

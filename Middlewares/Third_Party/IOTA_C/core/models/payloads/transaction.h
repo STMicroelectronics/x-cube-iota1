@@ -13,7 +13,35 @@
 #include "indexation.h"
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @addtogroup PAYLOADS
+ * @{
+ */
+
+/** @defgroup TRANSACTION Transaction
+ * @{
+ */
+
+/** @defgroup TRANSACTION_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 static const uint64_t MAX_IOTA_SUPPLY = 2779530283277761;
+
+/**
+ * @}
+ */
+
+/** @defgroup TRANSACTION_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 typedef struct {
   signature_t type;  ///< Set to value 0 to denote an Ed25519 Signature
@@ -63,9 +91,17 @@ typedef struct {
   tx_unlock_blocks_t* unlock_blocks;  ///< Defines an unlock block containing signature(s) unlocking input(s).
 } transaction_payload_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup TRANSACTION_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate a transaction essence object
@@ -302,8 +338,28 @@ void tx_payload_free(transaction_payload_t* tx);
  */
 void tx_payload_print(transaction_payload_t* tx);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

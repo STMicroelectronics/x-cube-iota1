@@ -11,6 +11,26 @@
 #include "address.h"
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup GET_BALANCE Get Balance
+ * @{
+ */
+
+/** @defgroup GET_BALANCE_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
 /**
  * @brief Stores address string and amount of balance
  *
@@ -34,9 +54,18 @@ typedef struct {
   } u;
 } res_balance_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup GET_BALANCE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
 /**
  * @brief Allocates balance response object
  * @return res_balance_t*
@@ -67,6 +96,26 @@ int deser_balance_info(char const *const j_str, res_balance_t *res);
  * @return int 0 on success
  */
 int get_balance(iota_client_conf_t const *ctx, char const addr[], res_balance_t *res);
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

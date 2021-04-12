@@ -22,12 +22,14 @@
 #include "main.h"
 #include <time.h>
 
+/* Private defines -----------------------------------------------------------*/
 #define CONVERSION_EPOCHFACTOR  2208988800ul
 
+/* Private function prototypes -----------------------------------------------*/
 void RTC_CalendarShow(uint8_t *showtime, uint8_t *showdate);
 time_t SynchronizationAgentConvertNTPTime2EpochTime(uint8_t* pBufferTimingAnswer,size_t sizeBuffer);
 
-
+/* Private variables ---------------------------------------------------------*/
 static volatile time_t          timeSyncSystem = 1446741778;
 
 const int yytab[2][12] = {
@@ -35,6 +37,7 @@ const int yytab[2][12] = {
   { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 };
 
+/* Function Definition -------------------------------------------------------*/
 /**
  * @brief  Set RTC time
 * @param  time_t epochTimeNow : Epoch Time

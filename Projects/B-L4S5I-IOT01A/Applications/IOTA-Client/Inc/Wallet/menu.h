@@ -28,12 +28,16 @@ extern "C" {
 /** @addtogroup PROJECTS
  * @{
  */
+
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
  
 /** @addtogroup APPLICATIONS
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @addtogroup IOTA_Client
  * @{
  */
 
@@ -51,6 +55,10 @@ void test_menu(void);
 
 int send_index(void);
 int wallet_send_tx(void);
+
+/**
+ * @}
+ */
 
 /**
  * @}

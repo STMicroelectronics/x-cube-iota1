@@ -9,7 +9,35 @@
 #include "types.h"
 #include "byte_buffer.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup PAYLOADS Payloads
+ * @{
+ */
+
+/** @defgroup INDEXATION Indexation
+ * @{
+ */
+
+/** @defgroup INDEXATION_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define MAX_INDEXCATION_INDEX_BYTES 64
+
+/**
+ * @}
+ */
+
+/** @defgroup INDEXATION_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief Indexation data structure
@@ -21,9 +49,17 @@ typedef struct {
   byte_buf_t *data;   ///< Data we are attaching
 } indexation_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup INDEXATION_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate indexation payload
@@ -66,8 +102,28 @@ size_t indexaction_serialize_length(indexation_t *idx);
  */
 size_t indexation_payload_serialize(indexation_t *idx, byte_t buf[]);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

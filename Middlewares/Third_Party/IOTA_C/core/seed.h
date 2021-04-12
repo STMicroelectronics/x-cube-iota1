@@ -7,11 +7,35 @@
 #include "types.h"
 #include "iota_crypto.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup SEED Seed
+ * @{
+ */
+
+/** @defgroup SEED_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define IOTA_SEED_BYTES ED_SEED_BYTES
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup SEED_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Gets a random seed.
@@ -20,8 +44,24 @@ extern "C" {
  */
 void random_seed(byte_t seed[]);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

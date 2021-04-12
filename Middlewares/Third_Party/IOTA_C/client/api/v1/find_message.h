@@ -12,6 +12,26 @@
 #include "client_service.h"
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup FIND_MESSAGE Find Message
+ * @{
+ */
+
+/** @defgroup FIND_MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
 /**
  * @brief Stores message IDs from the response object
  *
@@ -34,9 +54,17 @@ typedef struct {
   } u;
 } res_find_msg_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup JSON_Utils_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate a response object of the find message API
@@ -87,6 +115,26 @@ int deser_find_message(char const *const j_str, res_find_msg_t *res);
  * @return int 0 on success
  */
 int find_message_by_index(iota_client_conf_t const *conf, char index[], res_find_msg_t *res);
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

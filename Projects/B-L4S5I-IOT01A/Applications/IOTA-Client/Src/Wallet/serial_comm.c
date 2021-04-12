@@ -37,24 +37,6 @@ char    ans_buffer[BUFFER_LENGTH];
 
 /* Function definition -------------------------------------------------------*/
 
-/* Shouldn't be required anymore
-*
-// Removes the final /r/n
-static void adjust_input(char* input)
-{
-  char *ptr = input;
-  char c;
-  do {
-  c = *ptr;
-  if (c == '\r' || c == '\n') {
-    *ptr = '\0';
-  }
-    ptr++;
-  } while (c != '\r' && c != '\n' && c != '\0');
-}
-*
-*/
-
 /**
  * @brief  Wait for any input from the user.
  * @param  None

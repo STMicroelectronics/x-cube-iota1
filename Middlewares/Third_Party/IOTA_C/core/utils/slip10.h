@@ -8,11 +8,39 @@
 
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @addtogroup CORE_UTILS
+ * @{
+ */
+
+/** @defgroup SLIP10 Slip10
+ * @{
+ */
+
+/** @defgroup SLIP10_OBJECT_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define BIP32_HARDENED (1UL << 31)
 #define MAX_BIP32_PATH 32
 #define SLIP10_PUBLIC_KEY_BYTES 33
 #define SLIP10_PRIVATE_KEY_BYTES 32
 #define SLIP10_CHAIN_CODE_BYTES 32
+
+/**
+ * @}
+ */
+
+/** @defgroup SLIP10_OBJECT_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 typedef enum { SECP256K1_CURVE, NIST_P256_CURVE, ED25519_CURVE } slip10_curve_t;
 
@@ -26,9 +54,17 @@ typedef struct {
   int len;
 } bip32_path_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup SLIP10_OBJECT_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Gets bip32 path from string
@@ -61,8 +97,28 @@ int slip10_key_from_path(byte_t seed[], size_t seed_len, char path[], slip10_cur
  */
 int slip10_public_key(slip10_curve_t curve, slip10_key_t* key, byte_t pub_key[]);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

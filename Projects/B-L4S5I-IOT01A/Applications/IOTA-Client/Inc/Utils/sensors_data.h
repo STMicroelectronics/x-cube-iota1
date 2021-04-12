@@ -24,12 +24,62 @@
  extern "C" {
 #endif
 
+/** @addtogroup PROJECTS
+ * @{
+ */
+ 
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+ 
+/** @addtogroup APPLICATIONS
+ * @{
+ */
+
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @defgroup SENSORS Sensors
+ * @{
+ */
+
+/** @defgroup SENSOR_Data_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
+/* Exported functions --------------------------------------------------------*/
 int init_sensors(void);
 int PrepareSensorsData(char * Buffer, int Size, char * deviceID);
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* SENSORS_DATA_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

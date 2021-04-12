@@ -13,8 +13,32 @@
 #include "transaction.h"
 #include "types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup CORE_MESSAGE Core Message
+ * @{
+ */
+
+/** @defgroup CORE_MESSAGE_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define IOTA_MESSAGE_ID_BYTES 32  // message hash ID
 #define IOTA_MESSAGE_ID_HEX_BYTES (IOTA_MESSAGE_ID_BYTES * 2)
+
+/**
+ * @}
+ */
+
+/** @defgroup CORE_MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief A message object
@@ -29,9 +53,17 @@ typedef struct {
   uint64_t nonce;          ///< The nonce which lets this message fulfill the Proof-of-Work requirement.
 } core_message_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup CORE_MESSAGE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate a core message object
@@ -71,8 +103,24 @@ void core_message_add_parent(core_message_t* msg, byte_t const msg_id[]);
  */
 size_t core_message_parent_len(core_message_t* msg);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

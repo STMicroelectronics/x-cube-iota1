@@ -30,14 +30,110 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
-static  int FLASH_get_pageInBank(uint32_t addr);
-static  uint32_t FLASH_Init(void);
+static uint32_t GetPage(uint32_t uAddr);
+static uint32_t GetBank(uint32_t uAddr);
+static int FLASH_get_pageInBank(uint32_t addr);
+static uint32_t FLASH_Init(void);
 static int FLASH_write_at(uint32_t address, uint64_t *pData, uint32_t len_bytes);
 static int FLASH_unlock_erase(uint32_t address, uint32_t len_bytes);
-static  uint32_t FLASH_get_bank(uint32_t addr);
+static uint32_t FLASH_get_bank(uint32_t addr);
 
+/* Function Definition -------------------------------------------------------*/
 
-/* Functions Definition ------------------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
+/**
+  * @brief  Unlocks Flash for write access
+  * @param  None
+  * @retval HAL Status.
+  */
+static uint32_t FLASH_Init(void)
+{
+  uint32_t ret = HAL_ERROR;
+
+  /* Unlock the Program memory */
+  if (HAL_FLASH_Unlock() == HAL_OK)
+  {
+
+    /* Clear all FLASH flags */
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_PGSERR | FLASH_FLAG_WRPERR | FLASH_FLAG_OPTVERR);
+
+    /* Unlock the Program memory */
+    if (HAL_FLASH_Lock() == HAL_OK)
+    {
+      ret = HAL_OK;
+    }
+    else
+    {
+         printf("FLASH_If_Init : failed to lock\n");
+    }
+  }
+  else
+  {
+    printf("FLASH_If_Init : failed to unlock\n");
+  }
+  return ret;
+}
+
+/**
+  * @brief  Gets the page of a given address
+  * @param  uAddr: Address of the FLASH Memory
+  * @retval The page of a given address
+  */
+static uint32_t GetPage(uint32_t uAddr)
+{
+  uint32_t page = 0U;
+
+  if (uAddr < (FLASH_BASE + FLASH_BANK_SIZE))
+  {
+    /* Bank 1 */
+    page = (uAddr - FLASH_BASE) / FLASH_PAGE_SIZE;
+  }
+  else
+  {
+    /* Bank 2 */
+    page = (uAddr - (FLASH_BASE + FLASH_BANK_SIZE)) / FLASH_PAGE_SIZE;
+  }
+
+  return page;
+}
+
+/**
+  * @brief  Gets the bank of a given address
+  * @param  uAddr: Address of the FLASH Memory
+  * @retval The bank of a given address
+  */
+static uint32_t GetBank(uint32_t uAddr)
+{
+  uint32_t bank = 0U;
+
+  if (READ_BIT(SYSCFG->MEMRMP, SYSCFG_MEMRMP_FB_MODE) == 0U)
+  {
+    /* No Bank swap */
+    if (uAddr < (FLASH_BASE + FLASH_BANK_SIZE))
+    {
+      bank = FLASH_BANK_1;
+    }
+    else
+    {
+      bank = FLASH_BANK_2;
+    }
+  }
+  else
+  {
+    /* Bank swap */
+    if (uAddr < (FLASH_BASE + FLASH_BANK_SIZE))
+    {
+      bank = FLASH_BANK_2;
+    }
+    else
+    {
+      bank = FLASH_BANK_1;
+    }
+  }
+
+  return bank;
+}
 
 /**
   * @brief  Erase FLASH memory page(s) at address.
@@ -47,7 +143,7 @@ static  uint32_t FLASH_get_bank(uint32_t addr);
   * @retval  0:  Success.
             -1:  Failure.
   */
-int FLASH_unlock_erase(uint32_t address, uint32_t len_bytes)
+static int FLASH_unlock_erase(uint32_t address, uint32_t len_bytes)
 {
   int rc = -1;
   uint32_t PageError = 0;
@@ -144,7 +240,7 @@ static int FLASH_write_at(uint32_t address, uint64_t *pData, uint32_t len_bytes)
   *           FLASH_BANK_1
   *           FLASH_BANK_2
   */
-uint32_t FLASH_get_bank(uint32_t addr)
+static uint32_t FLASH_get_bank(uint32_t addr)
 {
   uint32_t bank = 0;
 
@@ -190,16 +286,7 @@ static int FLASH_get_pageInBank(uint32_t addr)
   return page;
 }
 
-/**
-  * @brief  Update a chunk of the FLASH memory.
-  * @note   The FLASH chunk must no cross a FLASH bank boundary.
-  * @note   The source and destination buffers have no specific alignment constraints.
-  * @param  In: dst_addr    Destination address in the FLASH memory.
-  * @param  In: data        Source address. 
-  * @param  In: size        Number of bytes to update.
-  * @retval  0:  Success.
-  *        !=0:  Failure.
-  */
+/* Public functions ----------------------------------------------------------*/
 int FLASH_update(uint32_t dst_addr, const void *data, uint32_t size)
 {
   int ret = 0;
@@ -255,105 +342,6 @@ int FLASH_update(uint32_t dst_addr, const void *data, uint32_t size)
 
   free(page_cache);
 
-  return ret;
-}
-
-
-static uint32_t GetPage(uint32_t uAddr);
-static uint32_t GetBank(uint32_t uAddr);
-/* Private functions ---------------------------------------------------------*/
-/**
-  * @brief  Gets the page of a given address
-  * @param  uAddr: Address of the FLASH Memory
-  * @retval The page of a given address
-  */
-static uint32_t GetPage(uint32_t uAddr)
-{
-  uint32_t page = 0U;
-
-  if (uAddr < (FLASH_BASE + FLASH_BANK_SIZE))
-  {
-    /* Bank 1 */
-    page = (uAddr - FLASH_BASE) / FLASH_PAGE_SIZE;
-  }
-  else
-  {
-    /* Bank 2 */
-    page = (uAddr - (FLASH_BASE + FLASH_BANK_SIZE)) / FLASH_PAGE_SIZE;
-  }
-
-  return page;
-}
-
-/**
-  * @brief  Gets the bank of a given address
-  * @param  uAddr: Address of the FLASH Memory
-  * @retval The bank of a given address
-  */
-static uint32_t GetBank(uint32_t uAddr)
-{
-  uint32_t bank = 0U;
-
-  if (READ_BIT(SYSCFG->MEMRMP, SYSCFG_MEMRMP_FB_MODE) == 0U)
-  {
-    /* No Bank swap */
-    if (uAddr < (FLASH_BASE + FLASH_BANK_SIZE))
-    {
-      bank = FLASH_BANK_1;
-    }
-    else
-    {
-      bank = FLASH_BANK_2;
-    }
-  }
-  else
-  {
-    /* Bank swap */
-    if (uAddr < (FLASH_BASE + FLASH_BANK_SIZE))
-    {
-      bank = FLASH_BANK_2;
-    }
-    else
-    {
-      bank = FLASH_BANK_1;
-    }
-  }
-
-  return bank;
-}
-
-/* Public functions ---------------------------------------------------------*/
-/**
-  * @brief  Unlocks Flash for write access
-  * @param  None
-  * @retval HAL Status.
-  */
-uint32_t FLASH_Init(void)
-{
-  uint32_t ret = HAL_ERROR;
-
-  /* Unlock the Program memory */
-  if (HAL_FLASH_Unlock() == HAL_OK)
-  {
-
-    /* Clear all FLASH flags */
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_PGSERR | FLASH_FLAG_WRPERR | FLASH_FLAG_OPTVERR);
-
-    /* Unlock the Program memory */
-    if (HAL_FLASH_Lock() == HAL_OK)
-    {
-      ret = HAL_OK;
-    }
-    else
-    {
-         printf("FLASH_If_Init : failed to lock\n");
-    }
-  }
-  else
-  {
-    printf("FLASH_If_Init : failed to unlock\n");
-  }
   return ret;
 }
 

@@ -13,6 +13,26 @@
 #include "json_keys.h"
 #include "byte_buffer.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @defgroup API API
+ * @{
+ */
+
+/** @defgroup JSON_Utils JSON Utils
+ * @{
+ */
+
+/** @defgroup JSON_Utils_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
 typedef enum {
   JSON_OK = 0,
   JSON_INVALID_PARAMS,
@@ -26,9 +46,17 @@ typedef enum {
   JSON_ERR
 } json_error_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup JSON_Utils_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Gets the string from a JSON object by key.
@@ -134,5 +162,25 @@ json_error_t json_get_uint64(cJSON const* const obj, char const key[], uint64_t*
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

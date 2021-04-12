@@ -49,7 +49,7 @@
 /* Private variables ---------------------------------------------------------*/
 static const char http_request[] = "HEAD / HTTP/1.1\r\nHost: "TIME_SOURCE_HTTP_HOST"\r\n\r\n";
 
-/* Functions Definition ------------------------------------------------------*/
+/* Function Definition -------------------------------------------------------*/
 
 /**
  * @brief Set the RTC time and date from an HTTP response.

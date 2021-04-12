@@ -10,7 +10,35 @@
 #include "response_error.h"
 #include "client_service.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup GET_OUTPUT Get Output
+ * @{
+ */
+
+/** @defgroup GET_OUTPUT_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define IOTA_OUTPUT_ID_HEX_BYTES 68
+
+/**
+ * @}
+ */
+
+/** @defgroup GET_OUTPUT_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief An output object
@@ -39,9 +67,17 @@ typedef struct {
   } u;
 } res_output_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup GET_OUTPUT_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Get an output from a given output ID
@@ -69,8 +105,28 @@ int deser_get_output(char const *const j_str, res_output_t *res);
  */
 void dump_output_response(res_output_t *res);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

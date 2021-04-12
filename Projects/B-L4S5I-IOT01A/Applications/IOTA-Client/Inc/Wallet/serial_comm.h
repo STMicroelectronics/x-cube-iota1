@@ -37,11 +37,15 @@ extern "C" {
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @addtogroup B-L4S5I-IOT01A
  * @{
  */
 
-/** @defgroup IOTA_SERIAL IOTA Serial utility
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @defgroup IOTA_SERIAL IOTA Serial
  * @{
  */
 
@@ -71,6 +75,10 @@ void serial_get_address_parameters(int8_t* sec, uint32_t* idx);
 void serial_get_options(bool* options);
 
 void serial_get_full_node_url(char* node_url);
+
+/**
+ * @}
+ */
 
 /**
  * @}

@@ -32,11 +32,15 @@
  * @{
  */
  
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+ 
 /** @addtogroup APPLICATIONS
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @addtogroup IOTA_Client
  * @{
  */
 
@@ -202,6 +206,10 @@ int checkDefaultSeed(const char ** const seed);
 int updateDefaultSeed(char *seed);
 int checkTxConfig(const char ** const full_node_url, const char ** const tx_interval, const char ** const temp_thresh);
 int updateTxConfig(void);
+
+/**
+ * @}
+ */
 
 /**
  * @}

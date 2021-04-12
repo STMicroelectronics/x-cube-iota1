@@ -26,21 +26,18 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-/*cstat -MISRAC2012-Dir-4.10 */
 #include "stdint.h"
 #include "string.h"
 #include "stdbool.h"
 #include "stdio.h"
 #include "es_wifi_conf.h"
-/*cstat +MISRAC2012-Dir-4.10 */
 
 /* Exported Constants --------------------------------------------------------*/
 #define ES_WIFI_PAYLOAD_SIZE     1200
 #define ES_WIFI_MAX_SO_TIMEOUT  30000
-/* must always be bigger than 30 sec , socket max timeout value  */
-#define ES_WIFI_HW_INTERFACE_TIMEOUT                0xFFFFFF
 
-//#define MIN(a, b)  ((a) < (b) ? (a) : (b))
+/* Exported macro-------------------------------------------------------------*/
+#define MIN(a, b)  ((a) < (b) ? (a) : (b))
 
 typedef int8_t (*IO_Init_Func)(uint16_t );
 typedef int8_t (*IO_DeInit_Func)( void);
@@ -114,14 +111,7 @@ typedef enum {
   ES_WIFI_FUNCTION_AWS = 0x01,
 } ES_WIFI_CredsFunction_t;
 
-typedef enum {
-  ES_WIFI_TLS_CHECK_NOTHING             = 0x00,
-  ES_WIFI_TLS_CHECK_ROOTCA              = 0x01,
-  ES_WIFI_TLS_CHECK_DEVICE_CERTS        = 0x02
-} ES_WIFI_TlsCheckCertificatMode_t;
-
-
-#define ES_WIFI_TLS_MULTIPLE_WRITE_SLOT 3
+#define ES_WIFI_TLS_MULTIPLE_WRITE_SLOT 0
 
 typedef struct
 {
@@ -166,10 +156,10 @@ typedef struct {
 typedef struct {
   uint8_t SSID[ES_WIFI_MAX_SSID_NAME_SIZE + 1];  /*!< Network public name for ESP AP mode */
   uint8_t Pass[ES_WIFI_MAX_PSWD_NAME_SIZE + 1];  /*!< Network password for ESP AP mode */
-  ES_WIFI_SecurityType_t Security;          /*!< Security of Wi-Fi access point */
+  ES_WIFI_SecurityType_t Security;          /*!< Security of Wi-Fi spot. This parameter can be a value of \ref ESP8266_Ecn_t enumeration */
   uint8_t Channel;                          /*!< Channel Wi-Fi is operating at */
   uint8_t MaxConnections;                   /*!< Max number of stations that are allowed to connect to ESP AP, between 1 and 4 */
-  uint8_t Hidden;                           /*!< Set to 1 if network is hidden (not broadcast) or zero if visible */
+  uint8_t Hidden;                           /*!< Set to 1 if network is hidden (not broadcast) or zero if noz */
 } ES_WIFI_APConfig_t;
 
 typedef struct {
@@ -226,14 +216,13 @@ typedef struct {
 #endif
 
 typedef struct {
-  ES_WIFI_ConnType_t    Type;
-  ES_WIFI_TlsCheckCertificatMode_t   TLScheckMode;
-  uint8_t               Number;
-  uint16_t              RemotePort;
-  uint16_t              LocalPort;
-  uint8_t               RemoteIP[4];
-  char*                 Name;
-  uint8_t               Backlog;
+  ES_WIFI_ConnType_t Type;
+  uint8_t            Number;
+  uint16_t           RemotePort;
+  uint16_t           LocalPort;
+  uint8_t            RemoteIP[4];
+  char*              Name;
+  uint8_t            Backlog;
 } ES_WIFI_Conn_t;
 
 typedef struct {
@@ -264,7 +253,6 @@ typedef struct {
 
 /* Exported functions --------------------------------------------------------*/
 ES_WIFI_Status_t  ES_WIFI_Init(ES_WIFIObject_t *Obj);
-ES_WIFI_Status_t  ES_WIFI_DeInit(ES_WIFIObject_t *Obj);
 ES_WIFI_Status_t  ES_WIFI_SetTimeout(ES_WIFIObject_t *Obj, uint32_t Timeout);
 ES_WIFI_Status_t  ES_WIFI_ListAccessPoints(ES_WIFIObject_t *Obj, ES_WIFI_APs_t *APs);
 ES_WIFI_Status_t  ES_WIFI_Connect(ES_WIFIObject_t *Obj, const char* SSID, const char* Password,
@@ -297,7 +285,7 @@ ES_WIFI_Status_t  ES_WIFI_StopClientConnection(ES_WIFIObject_t *Obj, ES_WIFI_Con
 ES_WIFI_Status_t  ES_WIFI_StartAWSClientConnection(ES_WIFIObject_t *Obj, ES_WIFI_AWS_Conn_t *conn);
 #endif
 ES_WIFI_Status_t  ES_WIFI_StartServerSingleConn(ES_WIFIObject_t *Obj, ES_WIFI_Conn_t *conn);
-ES_WIFI_Status_t  ES_WIFI_WaitServerConnection(ES_WIFIObject_t *Obj,uint32_t Timeout,ES_WIFI_Conn_t *con);
+ES_WIFI_Status_t  ES_WIFI_WaitServerConnection(ES_WIFIObject_t *Obj,uint32_t Timeout,ES_WIFI_Conn_t *);
 ES_WIFI_Status_t  ES_WIFI_CloseServerConnection(ES_WIFIObject_t *Obj,int socket);
 ES_WIFI_Status_t  ES_WIFI_StopServerSingleConn(ES_WIFIObject_t *Obj, int socket);
 
@@ -310,8 +298,6 @@ ES_WIFI_Status_t  ES_WIFI_ReceiveData(ES_WIFIObject_t *Obj, uint8_t Socket, uint
 ES_WIFI_Status_t  ES_WIFI_ReceiveDataFrom(ES_WIFIObject_t *Obj, uint8_t Socket, uint8_t *pdata, uint16_t Reqlen, uint16_t *Receivedlen, uint32_t Timeout, uint8_t *IPaddr, uint16_t *pPort);
 ES_WIFI_Status_t  ES_WIFI_ActivateAP(ES_WIFIObject_t *Obj, ES_WIFI_APConfig_t *ApConfig);
 ES_WIFI_APState_t ES_WIFI_WaitAPStateChange(ES_WIFIObject_t *Obj);
-ES_WIFI_Status_t  ES_WIFI_PeerInfo(ES_WIFIObject_t *Obj, uint8_t Socket, uint8_t *IPaddr, uint16_t *pPort);
-ES_WIFI_Status_t  ES_WIFI_SockInfo(ES_WIFIObject_t *Obj, uint8_t Socket, uint8_t *IPaddr, uint16_t *pPort);
 
 #if (ES_WIFI_USE_FIRMWAREUPDATE == 1)
 ES_WIFI_Status_t  ES_WIFI_OTA_Upgrade(ES_WIFIObject_t *Obj, uint8_t *link);
@@ -353,8 +339,6 @@ ES_WIFI_Status_t  ES_WIFI_StoreKey( ES_WIFIObject_t *Obj,
                                     uint8_t credSet,
                                     uint8_t* key,
                                     uint16_t keyLength );
-
-ES_WIFI_Status_t  ES_WIFI_AtCommand( ES_WIFIObject_t *Obj,char *cmd,char *resp);
 
 #ifdef __cplusplus
 }

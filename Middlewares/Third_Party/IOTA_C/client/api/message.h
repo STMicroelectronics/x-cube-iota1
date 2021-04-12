@@ -11,11 +11,39 @@
 #include "byte_buffer.h"
 #include "utarray.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup MESSAGE Message
+ * @{
+ */
+
+/** @defgroup MESSAGE_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define API_MSG_ID_HEX_BYTES 64
 #define API_TX_ID_HEX_BYTES 64
 #define API_ADDR_HEX_BYTES 64
 #define API_PUB_KEY_HEX_BYTES 64
 #define API_SIGNATURE_HEX_BYTES 128
+
+/**
+ * @}
+ */
+
+/** @defgroup MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 typedef enum {
   MSG_PAYLOAD_TRANSACTION = 0,
@@ -75,9 +103,17 @@ typedef struct {
   void *payload;             ///< NULL if no payload
 } message_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup MESSAGE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate a transaction payload object
@@ -238,8 +274,28 @@ char *payload_tx_blocks_public_key(payload_tx_t const *const tx, size_t index);
  */
 char *payload_tx_blocks_signature(payload_tx_t const *const tx, size_t index);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

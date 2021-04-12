@@ -11,8 +11,6 @@
 
 #include "unity.h"
 
-//#include "iot_flash_config.h"
-
 // BLAKE2 hash function
 // test vectors: https://github.com/BLAKE2/BLAKE2/tree/master/testvectors
 static void test_blake2b_hash(void)
@@ -185,34 +183,6 @@ void test_address_gen()
   TEST_ASSERT(address_from_ed25519_pub(seed_keypair.pub, ed_addr) == 0);
   dump_hex(ed_addr, ED25519_ADDRESS_BYTES);
 }
-
-/*
-void test_ed25519_signature() {
-  int read_len = 0;
-  int tot_len = 0;
-  char line[1024 * 5];
-  uint8_t out_signature[64];
-
-  memset(line, 0, sizeof(line));
-  printf("\nEnter your ed25519sign: \n");
-
-  read_len = getInputString(line, sizeof(line));
-  while (read_len > 0) {
-    line[read_len++] = '\n';
-    line[read_len] = '\0';
-
-    ed25519_vector_t* v = parsing_vector(line);
-    TEST_ASSERT_NOT_NULL(v);
-    iota_crypto_sign(v->sk, v->msg, v->msg_len, out_signature);
-    TEST_ASSERT_EQUAL_MEMORY(v->signature, out_signature, sizeof(v->signature));
-    ed25519_vector_free(v);
-
-    memset(line, 0, sizeof(line));
-    read_len = getInputString(line, sizeof(line));
-  }
-
-}
-*/
 
 int test_crypto(void)
 {

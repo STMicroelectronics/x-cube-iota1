@@ -31,15 +31,19 @@ extern "C" {
  * @{
  */
  
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+ 
 /** @addtogroup APPLICATIONS
  * @{
  */
 
-/** @addtogroup IOTA_LightNode
+/** @addtogroup IOTA_Client
  * @{
  */
 
-/** @defgroup IOTA_TERMINAL IOTA Terminal utility
+/** @defgroup IOTA_TERMINAL IOTA Terminal
  * @{
  */
 
@@ -96,6 +100,10 @@ void terminal_print_centered  (const char* text, char b, size_t width);
 void terminal_print_line      (char del, char line, size_t width);
 void terminal_print_delimiter (char del, size_t pos);
 void terminal_print_delimited (const char* text, char del, size_t width);
+
+/**
+ * @}
+ */
 
 /**
  * @}

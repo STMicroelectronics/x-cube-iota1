@@ -25,6 +25,32 @@
 extern "C" {
 #endif
 
+/** @defgroup PROJECTS PROJECTS
+ * @{
+ */
+ 
+/** @defgroup B-L4S5I-IOT01A B-L4S5I-IOT01A
+ * @{
+ */
+ 
+/** @defgroup APPLICATIONS APPLICATIONS
+ * @{
+ */
+
+/** @defgroup IOTA_Client IOTA_Client
+ * @{
+ */
+
+/** @defgroup CLOUD Cloud
+ * @{
+ */
+
+/** @defgroup CLOUD_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
+/* Exported functions --------------------------------------------------------*/
+
 /** Provided interface */
 int platform_init(void);
 void platform_deinit(void);
@@ -35,6 +61,30 @@ extern bool app_needs_root_ca(void);
 extern bool app_needs_device_keypair(void);
 extern bool app_needs_iot_config(void);
 extern int cloud_device_enter_credentials(void);
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

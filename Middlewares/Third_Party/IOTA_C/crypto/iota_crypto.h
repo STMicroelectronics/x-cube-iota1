@@ -4,6 +4,18 @@
 #ifndef __CRYPTO_IOTA_H__
 #define __CRYPTO_IOTA_H__
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @defgroup CRYPTO Crypto
+ * @{
+ */
+
+/** @defgroup CRYPTO_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 #define ED_SEED_BYTES 32         // ed25519 seed bytes
 #define ED_PUBLIC_KEY_BYTES 32   // ed25519 public key bytes
 #define ED_PRIVATE_KEY_BYTES 64  // ed25519 secret/private key bytes
@@ -15,6 +27,14 @@
 #define CRYPTO_BLAKE2B_HASH_BYTES 32  // crypto_generichash_blake2b_BYTES
 
 /**
+ * @}
+ */
+
+/** @defgroup CRYPTO_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
+/**
  * @brief Ed25519 Keypair
  *
  */
@@ -23,9 +43,17 @@ typedef struct {
   uint8_t priv[ED_PRIVATE_KEY_BYTES];  ///< 64 bytes private key
 } iota_keypair_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup CRYPTO_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief fill-in random bytes into the given byte buffer.
@@ -87,8 +115,20 @@ int iota_crypto_hmacsha512(uint8_t const secret_key[], uint8_t msg[], size_t msg
  */
 int iota_blake2b_sum(uint8_t const msg[], size_t msg_len, uint8_t out[], size_t out_len);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

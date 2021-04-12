@@ -24,16 +24,69 @@
 extern "C" {
 #endif
 
+#include "net_conf_template.h"  
 
-#include "net_conf_template.h"
+/** @addtogroup PROJECTS
+ * @{
+ */
 
+/** @addtogroup B-L4S5I-IOT01A
+ * @{
+ */
+
+/** @addtogroup APPLICATIONS
+ * @{
+ */
+
+/** @addtogroup IOTA_Client
+ * @{
+ */
+
+/** @defgroup NET_Config Net Config
+ * @{
+ */
+
+/** @defgroup NET_Config_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
+/**
+  * @brief  probe function to register wifi to connectivity framwotk
+  * @param  None
+  * @retval None
+  */
 int32_t wifi_probe(void **ll_drv_obj);
+
+/**
+  * @brief  Interrupt handler for  Data RDY signal
+  * @param  None
+  * @retval None
+  */
 void    SPI_WIFI_ISR(void);
 
+/**
+ * @}
+ */
 
+/**
+ * @}
+ */
 
-
-
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
+  
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

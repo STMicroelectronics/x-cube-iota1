@@ -10,18 +10,50 @@
 #include "types.h"
 #include "iota_crypto.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup ADDRESS Address
+ * @{
+ */
+
+/** @defgroup ADDRESS_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
 // the length of an address
 #define IOTA_ADDRESS_BYTES (1 + ED_PUBLIC_KEY_BYTES)  // address version + address data
 #define ED25519_ADDRESS_BYTES ED_PUBLIC_KEY_BYTES     // ed25519 address schema
 // the hex address is used in node API, it's a string of 64 characters, the version field is excluded
 #define IOTA_ADDRESS_HEX_BYTES (ED25519_ADDRESS_BYTES * 2)
 
+/**
+ * @}
+ */
+
+/** @defgroup ADDRESS_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
 // address signature version
 typedef enum { ADDRESS_VER_ED25519 = 0, ADDRESS_VER_UNKNOW = 1 } address_version_t;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup ADDRESS_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Get address from ed25519 public key
@@ -74,8 +106,24 @@ int address_from_bech32(char const* hrp, char const* bech32_str, byte_t out_addr
  */
 int address_2_bech32(byte_t const addr[], char const* hrp, char* bech32_addr);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

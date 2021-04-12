@@ -33,8 +33,6 @@
 #define WIFI_STARTED_SERVER_SOCKET       64U
 #define WIFI_CONNECTED_SOCKET_RW         (WIFI_CONNECTED_SOCKET | WIFI_SEND_OK | WIFI_RECV_OK)
 
-#define MIN(a, b)                        ((a) < (b) ? (a) : (b))
-
 /* Declaration of generic class functions               */
 
 int32_t es_wifi_driver(net_if_handle_t *pnetif);
