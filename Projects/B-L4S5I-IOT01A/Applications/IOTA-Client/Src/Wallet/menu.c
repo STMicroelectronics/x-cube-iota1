@@ -47,7 +47,7 @@ void main_menu(void)
     terminal_cls();
     
     // Menu
-    terminal_print_frame("IOTA LIGHT WALLET", '+', '|', '-', WW, RED);
+    terminal_print_frame("IOTA CLIENT", '+', '|', '-', WW, RED);
     iota_printf("|%*s|\r\n", -WW, "");
     iota_printf("|%*s|\r\n", -WW, " 1. Send index;");
     iota_printf("|%*s|\r\n", -WW, " 2. Wallet send tx;");
