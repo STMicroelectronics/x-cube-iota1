@@ -17,7 +17,7 @@ The current version of this application implements the IOTA protocol version 1.5
 (Chrysalis). For details about Chrysalis, please refer to the official IOTA
 Documentation website (https://chrysalis.docs.iota.org/).
 
-In the IOTA-Client application, the STM32 Nucleo device provides the 
+In the IOTA-Client application, the STM32 Discovery device provides the
 following functionalities:
  1. Send an indexation message
  2. Send a transaction message
