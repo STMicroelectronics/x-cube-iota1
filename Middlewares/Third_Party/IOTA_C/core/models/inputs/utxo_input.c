@@ -9,6 +9,28 @@
 #define UTXO_INPUT_MIN_INDEX 0
 #define UTXO_INPUT_MAX_INDEX 126
 
+utxo_input_ht *utxo_inputs_new(void) {
+  return NULL;
+}
+
+utxo_input_ht *utxo_inputs_find_by_id(utxo_input_ht **inputs, byte_t const tx_id[]) {
+  utxo_input_ht *in = NULL;
+  HASH_FIND(hh, *inputs, tx_id, TRANSACTION_ID_BYTES, in);
+  return in;
+}
+
+uint16_t utxo_inputs_count(utxo_input_ht **ht) {
+  return (uint16_t)HASH_COUNT(*ht);
+}
+
+void utxo_inputs_free(utxo_input_ht **ht) {
+  utxo_input_ht *curr_elm, *tmp;
+  HASH_ITER(hh, *ht, curr_elm, tmp) {
+    HASH_DEL(*ht, curr_elm);
+    free(curr_elm);
+  }
+}
+
 int utxo_inputs_add_with_key(utxo_input_ht **inputs, byte_t const tx_id[], uint16_t index, byte_t const pub[],
                              byte_t const priv[]) {
   if (index > UTXO_INPUT_MAX_INDEX) {

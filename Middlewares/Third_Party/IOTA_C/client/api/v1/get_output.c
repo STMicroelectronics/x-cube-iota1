@@ -3,16 +3,18 @@
 
 #include <inttypes.h>
 
-#include "json_utils.h"
-#include "get_output.h"
-#include "http_lib.h"
-#include "iota_str.h"
+#include "client/api/json_utils.h"
+#include "client/api/v1/get_output.h"
+#include "client/network/http_lib.h"
+#include "core/utils/iota_str.h"
 
 int get_output(iota_client_conf_t const *conf, char const output_id[], res_output_t *res) {
   int ret = -1;
+  http_context_t http_ctx;
   http_response_t http_res;
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
+  memset(&http_res, 0, sizeof(http_response_t));
+  // cmd length = "/api/v1/outputs/" + IOTA_OUTPUT_ID_HEX_STR
+  char cmd_buffer[85] = {0};
 
   if (conf == NULL || output_id == NULL || res == NULL) {
     // invalid parameters
@@ -25,43 +27,36 @@ int get_output(iota_client_conf_t const *conf, char const output_id[], res_outpu
     return -1;
   }
 
-  // compose restful api command
-  iota_str_t *cmd = iota_str_new(conf->url);
-  if (cmd == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    return -1;
-  }
+  // composing API command
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "/api/v1/outputs/%s", output_id);
 
-  if (iota_str_append(cmd, "api/v1/outputs/")) {
-    printf("[%s:%d]: cmd append failed\n", __func__, __LINE__);
-    goto done;
-  }
-
-  if (iota_str_append(cmd, output_id)) {
-    printf("[%s:%d]: output id append failed\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
+  // allocate response
   http_res.body = byte_buf_new();
   if (http_res.body == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    ret = -1;
+    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
     goto done;
   }
   http_res.code = 0;
 
-  // send request via http client
-  if ( http_read(http_handle,
-                 &http_res,
-                 "Content-Type: application/json",
-                 NULL) < 0 ) {
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd_buffer;
+  http_ctx.use_tls = conf->use_tls;
+  http_ctx.port = conf->port;
 
+  // http open
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
+    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+    goto done;
+  }
+
+  // send request via http client
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  NULL);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
   } else {
     byte_buf2str(http_res.body);
@@ -70,7 +65,7 @@ int get_output(iota_client_conf_t const *conf, char const output_id[], res_outpu
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
@@ -78,13 +73,17 @@ int get_output(iota_client_conf_t const *conf, char const output_id[], res_outpu
 
 done:
   // cleanup command
-  iota_str_destroy(cmd);
   byte_buf_free(http_res.body);
   return ret;
 }
 
 int deser_get_output(char const *const j_str, res_output_t *res) {
   int ret = -1;
+  if (j_str == NULL || res == NULL) {
+    printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
+    return -1;
+  }
+
   cJSON *json_obj = cJSON_Parse(j_str);
   if (json_obj == NULL) {
     return -1;
@@ -122,6 +121,12 @@ int deser_get_output(char const *const j_str, res_output_t *res) {
       // is spent
       if ((ret = json_get_boolean(data_obj, JSON_KEY_IS_SPENT, &res->u.output.is_spent)) != 0) {
         printf("[%s:%d]: gets %s json bool failed\n", __func__, __LINE__, JSON_KEY_IS_SPENT);
+        goto end;
+      }
+
+      // ledgerIndex
+      if ((ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output.ledger_idx)) != 0) {
+        printf("[%s:%d]: gets %s json uint64 failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);
         goto end;
       }
       
@@ -171,12 +176,13 @@ void dump_output_response(res_output_t *res) {
   } else {
     get_output_t *output = &res->u.output;
     printf("output:[\n");
-    printf("\t%s addr: %.64s\n", output->address_type ? "UNKNOW" : "ED25519", output->addr);
-    printf("\tmsg id: %.64s\n", output->msg_id);
-    printf("\ttx id: %.64s\n", output->tx_id);
+    printf("\t%s addr: %s\n", output->address_type ? "UNKNOW" : "ED25519", output->addr);
+    printf("\tmsg id: %s\n", output->msg_id);
+    printf("\ttx id: %s\n", output->tx_id);
     printf("\tamount: %" PRIu64 "\n", output->amount);
-    printf("\toutput_idx: %" PRIu16 "\n", output->output_idx);
+    printf("\toutput index: %" PRIu16 "\n", output->output_idx);
     printf("\tis spent: %s\n", output->is_spent ? "True" : "False");
+    printf("\tledger index: %" PRIu64 "\n", output->ledger_idx);
     printf("]\n");
   }
 }

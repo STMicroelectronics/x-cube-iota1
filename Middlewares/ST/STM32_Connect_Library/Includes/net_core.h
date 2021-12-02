@@ -24,17 +24,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#include "net_state.h"
 #include "net_wifi.h"
 #include "net_class_extension.h"
+/*cstat -MISRAC* -DEFINE-* -CERT-EXP19*  */
+/* #include "lwip/err.h" */
+/*cstat +MISRAC* +DEFINE-* +CERT-EXP19*  */
 
 
 
 
-int32_t icmp_ping(net_if_handle_t *netif, sockaddr_t *addr, int32_t count, int32_t timeout, int32_t response[]);
+int32_t icmp_ping(net_if_handle_t *netif, net_sockaddr_t *addr, int32_t count, int32_t timeout, int32_t response[]);
 
 #ifdef NET_USE_RTOS
-void    *net_calloc(size_t n, size_t m);
+
 
 
 void net_init_locks(void);
@@ -76,7 +79,7 @@ void net_unlock_nochk(int32_t idx);
 #define  UNLOCK_SOCK_ARRAY()
 #define  LOCK_NETIF_LIST()
 #define  UNLOCK_NETIF_LIST()
-#define  WAIT_STATE_CHANGE(to)
+#define  WAIT_STATE_CHANGE(to)  pnetif->pdrv->if_yield(pnetif, to)
 #define  SIGNAL_STATE_CHANGE()
 
 
@@ -85,14 +88,6 @@ void net_unlock_nochk(int32_t idx);
 
 
 
-typedef enum
-{
-  NET_INTERFACE_CLASS_WIFI,
-  NET_INTERFACE_CLASS_CELLULAR,
-  NET_INTERFACE_CLASS_ETHERNET,
-  NET_INTERFACE_CLASS_CUSTOM
-}
-net_interface_class_t;
 
 
 typedef enum
@@ -118,34 +113,37 @@ struct net_if_drv_s
   int32_t (* if_deinit)(net_if_handle_t *pnetif);
   int32_t (* if_start)(net_if_handle_t *pnetif);
   int32_t (* if_stop)(net_if_handle_t *pnetif);
+  int32_t (* if_yield)(net_if_handle_t *pnetif, uint32_t timeout);
   int32_t (* if_connect)(net_if_handle_t *pnetif);
   int32_t (* if_disconnect)(net_if_handle_t *pnetif);
+  int32_t (* if_atcmd)(net_if_handle_t *pnetif, char_t *cmd, char_t *resp);
   int32_t (* if_powersave_enable)(net_if_handle_t *pnetif);
   int32_t (* if_powersave_disable)(net_if_handle_t *pnetif);
-
+  void    *netif;
   void    *context;
+#ifndef NET_BYPASS_NET_SOCKET
   /* Socket BSD Like APIs */
-  int32_t (* socket)(int32_t domain, int32_t type, int32_t protocol);
-  int32_t (* bind)(int32_t sock, const sockaddr_t *addr, int32_t addrlen);
-  int32_t (* listen)(int32_t sock, int32_t backlog);
-  int32_t (* accept)(int32_t sock, sockaddr_t *addr, int32_t *addrlen);
-  int32_t (* connect)(int32_t sock, const sockaddr_t *addr, int32_t addrlen);
-  int32_t (* send)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags);
-  int32_t (* recv)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags);
-  int32_t (* sendto)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *to, int32_t tolen);
-  int32_t (* recvfrom)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *from, int32_t *fromlen);
-  int32_t (* setsockopt)(int32_t sock, int32_t level, int32_t optname, const void *optvalue, int32_t optlen);
-  int32_t (* getsockopt)(int32_t sock, int32_t level, int32_t optname, void *optvalue, int32_t *optlen);
-  int32_t (* getsockname)(int32_t sock, sockaddr_t *name, int32_t *namelen);
-  int32_t (* getpeername)(int32_t sock, sockaddr_t *name, int32_t *namelen);
-  int32_t (* close)(int32_t sock, bool Clone);
-  int32_t (* shutdown)(int32_t sock, int32_t mode);
-
+  int32_t (* psocket)(int32_t domain, int32_t type, int32_t protocol);
+  int32_t (* pbind)(int32_t sock, const net_sockaddr_t *addr, uint32_t addrlen);
+  int32_t (* plisten)(int32_t sock, int32_t backlog);
+  int32_t (* paccept)(int32_t sock, net_sockaddr_t *addr, uint32_t *addrlen);
+  int32_t (* pconnect)(int32_t sock, const net_sockaddr_t *addr, uint32_t addrlen);
+  int32_t (* psend)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags);
+  int32_t (* precv)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags);
+  int32_t (* psendto)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, net_sockaddr_t *to, uint32_t tolen);
+  int32_t (* precvfrom)(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, net_sockaddr_t *from, uint32_t *flen);
+  int32_t (* psetsockopt)(int32_t sock, int32_t level, int32_t optname, const void *optvalue, uint32_t optlen);
+  int32_t (* pgetsockopt)(int32_t sock, int32_t level, int32_t optname, void *optvalue, uint32_t *optlen);
+  int32_t (* pgetsockname)(int32_t sock, net_sockaddr_t *name, uint32_t *namelen);
+  int32_t (* pgetpeername)(int32_t sock, net_sockaddr_t *name, uint32_t *namelen);
+  int32_t (* pclose)(int32_t sock, bool Clone);
+  int32_t (* pshutdown)(int32_t sock, int32_t mode);
+#endif /* NET_BYPASS_NET_SOCKET */
   /* Service */
-  int32_t (* gethostbyname)(net_if_handle_t *, sockaddr_t *addr, char_t *name);
-  int32_t (* ping)(net_if_handle_t *, sockaddr_t *addr, int32_t count, int32_t delay, int32_t reponse[]);
+  int32_t (* pgethostbyname)(net_if_handle_t *, net_sockaddr_t *addr, char_t *name);
+  int32_t (* pping)(net_if_handle_t *, net_sockaddr_t *addr, int32_t count, int32_t delay, int32_t response[]);
   /* class extension */
-  union
+  struct
   {
     net_if_wifi_class_extension_t         *wifi;
     net_if_ethernet_class_extension_t     *ethernet;
@@ -158,7 +156,7 @@ struct net_if_drv_s
 
 
 
-net_if_handle_t *net_if_find(ipaddr_t  addr);
+net_if_handle_t *net_if_find(net_sockaddr_t  *addr);
 net_if_handle_t *netif_check(net_if_handle_t *pnetif);
 
 
@@ -194,19 +192,11 @@ typedef struct net_socket_s
 } net_socket_t;
 
 
-typedef struct
-{
-  int32_t (*add_if)(net_if_handle_t *pnetif, int32_t (*if_output)(net_buf_t *net_buf), uint8_t default_flag);
-  int32_t (*remove_if)(net_if_handle_t *pnetif);
-  int32_t (*connect)(net_if_handle_t *pnetif);
-  int32_t (*disconnect)(net_if_handle_t *pnetif);
-} iplib_t;
-
-
-
 
 #ifdef  NET_MBEDTLS_HOST_SUPPORT
+/*cstat -MISRAC* -DEFINE-* -CERT-EXP19*  */
 #include "net_mbedtls.h"
+/*cstat +MISRAC* +DEFINE-* +CERT-EXP19*  */
 #endif /* NET_MBEDTLS_HOST_SUPPORT */
 
 #ifdef __cplusplus

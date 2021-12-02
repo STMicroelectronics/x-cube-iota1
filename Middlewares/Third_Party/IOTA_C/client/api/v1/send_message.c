@@ -3,20 +3,28 @@
 
 #include <stdio.h>
 
-#include "json_utils.h"
-#include "message_builder.h"
-#include "get_tips.h"
-#include "send_message.h"
-#include "iota_str.h"
-#include "http_lib.h"
+#include "client/api/json_utils.h"
+#include "client/api/message_builder.h"
+#include "client/api/v1/get_tips.h"
+#include "client/api/v1/send_message.h"
+#include "core/utils/iota_str.h"
+#include "client/network/http_lib.h"
+
+char const* const cmd_msg = "/api/v1/messages";
 
 // create JSON object and put the JSON string in byte_buf_t that can send by http client.
 int serialize_indexation(message_t* msg, byte_buf_t* buf) {
   int ret = -1;
-  cJSON* json_root = cJSON_CreateObject();
   byte_buf_t* hex_data = NULL;
   byte_buf_t* hex_index = NULL;
   char* json_string = NULL;
+
+  if (msg == NULL || buf == NULL) {
+    printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
+    return -1;
+  }
+
+  cJSON* json_root = cJSON_CreateObject();
   if (!json_root) {
     printf("[%s:%d] create json root object failed\n", __func__, __LINE__);
     return -1;
@@ -145,32 +153,28 @@ end:
 
 int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_message_t* res) {
   int ret = -1;
-  iota_str_t* cmd = NULL;
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
   byte_buf_t* json_data = byte_buf_new();
-  http_response_t node_res;
-  node_res.body = byte_buf_new();
-  if (!json_data || !node_res.body) {
+  http_context_t http_ctx;
+  http_response_t http_res;
+  http_res.body = byte_buf_new();
+  if (!json_data || !http_res.body) {
     printf("[%s:%d] allocate http buffer failed\n", __func__, __LINE__);
     ret = -1;
     goto end;
   }
-  node_res.code = 0;
+  http_res.code = 0;
 
   // serialize message
   switch (msg->type) {
     case MSG_PAYLOAD_TRANSACTION:
-      // TODO
-      break;
     case MSG_PAYLOAD_MILESTONE:
-      // TODO
+      printf("[%s:%d] not supported, use send_core_message instead\n", __func__, __LINE__);
       break;
     case MSG_PAYLOAD_INDEXATION:
       ret = serialize_indexation(msg, json_data);
       break;
     default:
-      printf("[%s:%d] UNKNOW message payload type\n", __func__, __LINE__);
+      printf("[%s:%d] UNKNOWN message payload type\n", __func__, __LINE__);
       break;
   }
 
@@ -178,40 +182,39 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
     goto end;
   }
 
-  // post message
-  if ((cmd = iota_str_new(conf->url)) == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    goto end;
-  }
-
-  if (iota_str_append(cmd, "api/v1/messages")) {
-    printf("[%s:%d]: string append failed\n", __func__, __LINE__);
-    goto end;
-  }
+  ret = -1;
+//  printf("[%s:%d]: json_data=%s\n", __func__, __LINE__, json_data->data);
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd_msg;
+  http_ctx.port = conf->port;
+  http_ctx.use_tls = conf->use_tls;
 
   // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
+  //printf("[%s:%d]: Opening HTTP session...\n", __func__, __LINE__);
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
     printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    ret = -1;
     goto end;
   }
 
   // send request via http client
-  if ( http_read(http_handle,
-                 &node_res,
-                 "Content-Type: application/json",
-                 json_data) < 0 ) {
-
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-    ret = -1;
+  //printf("[%s:%d]: Sending HTTP request...\n", __func__, __LINE__);
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  json_data);
+  if ( ret < 0 ) {
+    printf("[%s:%d]: HTTP send/recv problem\n", __func__, __LINE__);
   } else {
-    byte_buf2str(node_res.body);
+    byte_buf2str(http_res.body);
     // deserialize node response
-    ret = deser_send_message_response((char const *)node_res.body->data, res);
+    ret = deser_send_message_response((char const *)http_res.body->data, res);
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  //printf("[%s:%d]: Closing HTTP session...\n", __func__, __LINE__);
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
@@ -219,8 +222,7 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
 
 end:
   byte_buf_free(json_data);
-  byte_buf_free(node_res.body);
-  iota_str_destroy(cmd);
+  byte_buf_free(http_res.body);
   return ret;
 }
 
@@ -239,7 +241,7 @@ int send_indexation_msg(iota_client_conf_t const* const conf, char const index[]
 
   if ((ret = get_tips(conf, tips)) != 0) {
     printf("[%s:%d] get tips message failed\n", __func__, __LINE__);
-    return ret;
+    goto done;
   }
 
   if (tips->is_error) {
@@ -272,7 +274,7 @@ int send_indexation_msg(iota_client_conf_t const* const conf, char const index[]
 
   // send message to a node
   if ((ret = send_message(conf, msg, res)) != 0) {
-    printf("[%s:%d] send message failed\n", __func__, __LINE__);
+    printf("[%s:%d] send message problem\n", __func__, __LINE__);
   }
 
 done:
@@ -284,18 +286,16 @@ done:
 
 int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg, res_send_message_t* res) {
   int ret = -1;
-  iota_str_t* cmd = NULL;
   byte_buf_t* json_data = byte_buf_new();
-  http_response_t node_res;
-  node_res.body = byte_buf_new();
-  node_res.code = 0;
+  http_response_t http_res;
+  http_context_t http_ctx;
+  http_res.body = byte_buf_new();
+  http_res.code = 0;
   res_tips_t* tips = NULL;
   byte_t tmp_msg_parent[IOTA_MESSAGE_ID_BYTES];
   memset(&tmp_msg_parent, 0, sizeof(tmp_msg_parent));
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
 
-  if (!json_data || !node_res.body) {
+  if (!json_data || !http_res.body) {
     printf("[%s:%d] allocate http buffer failed\n", __func__, __LINE__);
     goto end;
   } else {
@@ -313,9 +313,11 @@ int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg,
           goto end;
         } else {
           char** p = NULL;
-          while ((p = (char**)utarray_next(tips->u.tips, p))) {
-            hex2bin(*p, STR_TIP_MSG_ID_LEN, tmp_msg_parent, sizeof(tmp_msg_parent));
+          p = (char**)utarray_next(tips->u.tips, p);
+          while (p != NULL) {
+            hex_2_bin(*p, STR_TIP_MSG_ID_LEN, tmp_msg_parent, sizeof(tmp_msg_parent));
             utarray_push_back(msg->parents, tmp_msg_parent);
+            p = (char**)utarray_next(tips->u.tips, p);
           }
           char* msg_str = message_to_json(msg);
           if (!msg_str) {
@@ -325,43 +327,41 @@ int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg,
           // put json string into byte_buf_t
           json_data->data = (byte_t*)msg_str;
           json_data->cap = json_data->len = strlen(msg_str) + 1;
-          // post message
-          if ((cmd = iota_str_new(conf->url)) == NULL) {
-            printf("[%s:%d]: OOM\n", __func__, __LINE__);
-            goto end;
-          }
-          if (iota_str_append(cmd, "api/v1/messages")) {
-            printf("[%s:%d]: string append failed\n", __func__, __LINE__);
-            goto end;
-          }
         }
       }
     }
   }
-  
+
+  ret = -1;
+
+  // config http client
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd_msg;
+  http_ctx.port = conf->port;
+  http_ctx.use_tls = conf->use_tls;
+
   // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
     printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    ret = -1;
     goto end;
   }
 
   // send request via http client
-  if ( http_read(http_handle,
-                 &node_res,
-                 "Content-Type: application/json",
-                 json_data) < 0 ) {
-
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  json_data);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-    ret = -1;
   } else {
-    byte_buf2str(node_res.body);
+    byte_buf2str(http_res.body);
     // deserialize node response
-    ret = deser_send_message_response((char const *)node_res.body->data, res);
+    ret = deser_send_message_response((char const *)http_res.body->data, res);
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
@@ -369,8 +369,7 @@ int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg,
 
 end:
   byte_buf_free(json_data);
-  byte_buf_free(node_res.body);
-  iota_str_destroy(cmd);
+  byte_buf_free(http_res.body);
   res_tips_free(tips);
   return ret;
 }

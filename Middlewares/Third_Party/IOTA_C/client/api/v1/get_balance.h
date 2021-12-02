@@ -6,13 +6,33 @@
 
 #include <stdint.h>
 
-#include "response_error.h"
-#include "client_service.h"
-#include "address.h"
-#include "types.h"
+#include "client/api/v1/response_error.h"
+#include "client/client_service.h"
+#include "core/address.h"
+#include "core/types.h"
+
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup GET_BALANCE Get Balance
+ * @{
+ */
+
+/** @defgroup GET_BALANCE_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
- * @brief Stores address string and amount of balance
+ * @brief Stores address type, amount of balance, address string, dust allowed status and ledger index
  *
  */
 typedef struct {
@@ -20,6 +40,8 @@ typedef struct {
   uint64_t balance;                      ///< amount of balance
   char address[IOTA_ADDRESS_HEX_BYTES+1];  ///< hex address string, ex:
                                          ///< 7ED3D67FC7B619E72E588F51FEF2379E43E6E9A856635843B3F29AA3A3F1F006
+  bool dust_allowed;                     ///< Dust allowance output to the transaction allowed or not
+  uint64_t ledger_idx;                   ///< Ledger Index
 } get_balance_t;
 
 /**
@@ -34,14 +56,23 @@ typedef struct {
   } u;
 } res_balance_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup GET_BALANCE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
 /**
  * @brief Allocates balance response object
  * @return res_balance_t*
  */
-res_balance_t *res_balance_new();
+res_balance_t *res_balance_new(void);
 
 /**
  * @brief Frees an balance response object
@@ -62,11 +93,32 @@ int deser_balance_info(char const *const j_str, res_balance_t *res);
  * @brief Gets balance from an address
  *
  * @param[in] ctx IOTA Client conf
+ * @param[in] is_bech32 the address type, true for bech32, false for ed25519
  * @param[in] addr The address
  * @param[out] res A response object of balance info
  * @return int 0 on success
  */
-int get_balance(iota_client_conf_t const *ctx, char const addr[], res_balance_t *res);
+int get_balance(iota_client_conf_t const *ctx, bool is_bech32, char const addr[], res_balance_t *res);
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

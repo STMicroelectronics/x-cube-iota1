@@ -9,25 +9,50 @@
 
 #include "utarray.h"
 
-#include "response_error.h"
-#include "client_service.h"
-#include "types.h"
+#include "client/api/v1/response_error.h"
+#include "client/client_service.h"
+#include "core/types.h"
+
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup GET_NODE_INFO Get Node Info
+ * @{
+ */
+
+/** @defgroup GET_NODE_INFO_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief The general information about the node
  *
  */
 typedef struct {
-  char name[32];        ///< name of this node
-  char version[32];     ///< version of this node
-  char network_id[32];  ///< network ID of this node
-  char bech32hrp[16];   ///< bech32 HRP, `atoi` for testnet and `iota` for mainnet
-  uint64_t min_pow_score;
-  uint64_t latest_milestone_index;
-  uint64_t confirmed_milestone_index;
-  uint64_t pruning_milestone_index;
-  UT_array *features;
-  bool is_healthy;
+  char name[32];                        ///< name of this node
+  char version[32];                     ///< version of this node
+  char network_id[32];                  ///< network ID of this node
+  char bech32hrp[16];                   ///< bech32 HRP, `atoi` for testnet and `iota` for mainnet
+  uint64_t min_pow_score;               ///< The minimum pow score of the network
+  uint64_t latest_milestone_index;      ///< The latest known milestone index
+  uint64_t confirmed_milestone_index;   ///< The current confirmed milestone's index
+  uint64_t pruning_milestone_index;     ///< The milestone index at which the last pruning commenced
+  uint64_t latest_milestone_timestamp;  ///< The timestamp of the latest known milestone
+  float msg_pre_sec;                    ///< The current rate of new messages per second
+  float referenced_msg_pre_sec;         ///< The current rate of referenced messages per second
+  float referenced_rate;  ///< The ratio of referenced messages in relation to new messages of the last confirmed
+                          ///< milestone
+  UT_array *features;     ///< The features this node exposes
+  bool is_healthy;        ///< Whether the node is healthy.
 } get_node_info_t;
 
 /**
@@ -42,9 +67,18 @@ typedef struct {
   } u;
 } res_node_info_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup GET_NODE_INFO_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
+
 /**
  * @brief Allocates node info response object
  * @return res_node_info_t*
@@ -91,8 +125,28 @@ int get_node_info(iota_client_conf_t const *conf, res_node_info_t *res);
  */
 int deser_node_info(char const *const j_str, res_node_info_t *res);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

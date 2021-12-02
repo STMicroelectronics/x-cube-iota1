@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "json_utils.h"
-#include "get_message.h"
-#include "http_lib.h"
-#include "address.h"
-#include "iota_str.h"
+#include "client/api/json_utils.h"
+#include "client/api/v1/get_message.h"
+#include "client/network/http_lib.h"
+#include "core/address.h"
+#include "core/utils/iota_str.h"
 
 static int deser_milestone(cJSON *milestone, res_message_t *res) {
   int ret = -1;
@@ -53,7 +53,24 @@ end:
   return ret;
 }
 
-static int deser_indexation(cJSON *idx_obj, res_message_t *res) {
+static int deser_tx_indexation(cJSON *json, payload_index_t *idx) {
+  int ret = -1;
+  if (json == NULL || idx == NULL) {
+    printf("[%s:%d]: Invalid parameters\n", __func__, __LINE__);
+    return -1;
+  }
+
+  if ((ret = json_get_byte_buf_str(json, JSON_KEY_INDEX, idx->index)) != 0) {
+    printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_INDEX);
+  } else {
+    if ((ret = json_get_byte_buf_str(json, JSON_KEY_DATA, idx->data)) != 0) {
+      printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_DATA);
+    }
+  }
+  return ret;
+}
+
+static int deser_msg_indexation(cJSON *idx_obj, res_message_t *res) {
   int ret = -1;
   payload_index_t *idx = payload_index_new();
   if (idx == NULL) {
@@ -61,16 +78,7 @@ static int deser_indexation(cJSON *idx_obj, res_message_t *res) {
     return -1;
   }
 
-  if ((ret = json_get_byte_buf_str(idx_obj, JSON_KEY_INDEX, idx->index)) != 0) {
-    printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_INDEX);
-    goto end;
-  }
-
-  if ((ret = json_get_byte_buf_str(idx_obj, JSON_KEY_DATA, idx->data)) != 0) {
-    printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_DATA);
-  }
-
-end:
+  ret = deser_tx_indexation(idx_obj, idx);
   if (ret != 0) {
     payload_index_free(idx);
     res->u.msg->payload = NULL;
@@ -121,7 +129,7 @@ static int deser_tx_inputs(cJSON *essence_obj, payload_tx_t *payload_tx) {
         }
 
         // add the input element to payload
-        utarray_push_back(payload_tx->intputs, &input);
+        utarray_push_back(payload_tx->inputs, &input);
 
       } else {
         printf("[%s:%d] parsing inputs array failed\n", __func__, __LINE__);
@@ -209,35 +217,50 @@ static int deser_tx_blocks(cJSON *blocks_obj, payload_tx_t *payload_tx) {
   */
   cJSON *elm = NULL;
   cJSON_ArrayForEach(elm, blocks_obj) {
-    cJSON *sig_obj = cJSON_GetObjectItemCaseSensitive(elm, JSON_KEY_SIG);
-    if (sig_obj) {
-      cJSON *sig_type = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_TYPE);
-      if (cJSON_IsNumber(sig_type)) {
-        if (sig_type->valueint == ADDRESS_VER_ED25519) {
-          cJSON *pub = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_PUB_KEY);
-          cJSON *sig = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_SIG);
-          if (cJSON_IsString(pub) && cJSON_IsString(sig)) {
-            payload_unlock_block_t block;
-            memset(&block, 0, sizeof(payload_unlock_block_t));
-            memcpy(block.pub_key, pub->valuestring, sizeof(block.pub_key));
-            memcpy(block.signature, sig->valuestring, sizeof(block.signature));
-            // add to unlockBlocks
-            utarray_push_back(payload_tx->unlock_blocks, &block);
+    cJSON *block_type = cJSON_GetObjectItemCaseSensitive(elm, JSON_KEY_TYPE);
+    if (!cJSON_IsNumber(block_type)) {
+      printf("[%s:%d] %s must be a number\n", __func__, __LINE__, JSON_KEY_TYPE);
+      break;
+    }
+    if (block_type->valueint == 0) {  // signature block
+      cJSON *sig_obj = cJSON_GetObjectItemCaseSensitive(elm, JSON_KEY_SIG);
+      if (sig_obj) {
+        cJSON *sig_type = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_TYPE);
+        if (cJSON_IsNumber(sig_type)) {
+          if (sig_type->valueint == ADDRESS_VER_ED25519) {
+            cJSON *pub = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_PUB_KEY);
+            cJSON *sig = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_SIG);
+            if (cJSON_IsString(pub) && cJSON_IsString(sig)) {
+              char sig_block[API_SIGNATURE_BLOCK_STR_LEN];
+              memset(sig_block, 0, sizeof(sig_block));
+              sig_block[0] = sig_type->valueint;
+              memcpy(sig_block + 1, pub->valuestring, API_PUB_KEY_HEX_STR_LEN);
+              memcpy(sig_block + 1 + API_PUB_KEY_HEX_STR_LEN, sig->valuestring, API_SIGNATURE_HEX_STR_LEN);
+              payload_tx_add_sig_block(payload_tx, sig_block, API_SIGNATURE_BLOCK_STR_LEN);
+            } else {
+              printf("[%s:%d] publicKey or signature is not a string\n", __func__, __LINE__);
+              return -1;
+            }
           } else {
-            printf("[%s:%d] publicKey or signature is not a string\n", __func__, __LINE__);
+            printf("[%s:%d] only suppport ed25519 signature\n", __func__, __LINE__);
             return -1;
           }
         } else {
-          printf("[%s:%d] only suppport ed25519 signature\n", __func__, __LINE__);
+          printf("[%s:%d] signature type is not an number\n", __func__, __LINE__);
           return -1;
         }
       } else {
-        printf("[%s:%d] signature type is not an number\n", __func__, __LINE__);
+        printf("[%s:%d] %s is not found\n", __func__, __LINE__, JSON_KEY_SIG);
         return -1;
       }
+    } else if (block_type->valueint == 1) {  // reference block
+      cJSON *ref = cJSON_GetObjectItemCaseSensitive(elm, JSON_KEY_REFERENCE);
+      if (ref && cJSON_IsNumber(ref)) {
+        payload_tx_add_ref_block(payload_tx, ref->valueint);
+      }
     } else {
-      printf("[%s:%d] %s is not found\n", __func__, __LINE__, JSON_KEY_SIG);
-      return -1;
+      printf("[%s:%d] Unsupported block type\n", __func__, __LINE__);
+      break;
     }
   }
 
@@ -269,8 +292,34 @@ static int deser_transaction(cJSON *tx_obj, res_message_t *res) {
     // payload
     cJSON *payload_obj = cJSON_GetObjectItemCaseSensitive(essence_obj, JSON_KEY_PAYLOAD);
     if (!cJSON_IsNull(payload_obj)) {
-      // TODO;
-      printf("[%s:%d]: TODO parsing payload in a transaction\n", __func__, __LINE__);
+      /*
+      "payload": {
+          "type": 2,
+          "index": "45535033322057616c6c6574",
+          "data": "73656e742066726f6d2065737033322076696120696f74612e6300"
+      }
+      */
+      cJSON *payload_type = cJSON_GetObjectItemCaseSensitive(payload_obj, JSON_KEY_TYPE);
+      if (cJSON_IsNumber(payload_type)) {
+        if (payload_type->valueint == MSG_PAYLOAD_INDEXATION) {
+          payload_index_t *idx = payload_index_new();
+          if (idx == NULL) {
+            printf("[%s:%d]: allocate index payload failed\n", __func__, __LINE__);
+          } else {
+            if (deser_tx_indexation(payload_obj, idx) != 0) {
+              printf("[%s:%d]: parsing index payload failed\n", __func__, __LINE__);
+              payload_index_free(idx);
+            } else {
+              tx->type = MSG_PAYLOAD_INDEXATION;
+              tx->payload = idx;
+            }
+          }
+        } else {
+          printf("[%s:%d]: payload type %d is not supported\n", __func__, __LINE__, payload_type->valueint);
+        }
+      } else {
+        printf("[%s:%d]: payload type must be a number\n", __func__, __LINE__);
+      }
     }
 
     // unlock blocks
@@ -296,10 +345,12 @@ end:
   return ret;
 }
 
-res_message_t *res_message_new() {
+res_message_t *res_message_new(void) {
   res_message_t *msg = malloc(sizeof(res_message_t));
   if (msg) {
     msg->is_error = false;
+    msg->u.error = NULL;
+    msg->u.msg = NULL;
     return msg;
   }
   return NULL;
@@ -310,7 +361,9 @@ void res_message_free(res_message_t *msg) {
     if (msg->is_error) {
       res_err_free(msg->u.error);
     } else {
-      api_message_free(msg->u.msg);
+      if (msg->u.msg) {
+        api_message_free(msg->u.msg);
+      }
     }
     free(msg);
   }
@@ -318,6 +371,11 @@ void res_message_free(res_message_t *msg) {
 
 int deser_get_message(char const *const j_str, res_message_t *res) {
   int ret = -1;
+  if (j_str == NULL || res == NULL) {
+    printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
+    return -1;
+  }
+
   cJSON *json_obj = cJSON_Parse(j_str);
   if (json_obj == NULL) {
     return -1;
@@ -363,7 +421,8 @@ int deser_get_message(char const *const j_str, res_message_t *res) {
       
       cJSON *payload = cJSON_GetObjectItemCaseSensitive(data_obj, JSON_KEY_PAYLOAD);
       if (payload) {
-        if ((ret = json_get_uint32(payload, JSON_KEY_TYPE, &res->u.msg->type) != 0)) {
+        ret = json_get_uint32(payload, JSON_KEY_TYPE, &res->u.msg->type);
+        if (ret != 0) {
           printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_TYPE);
           goto end;
         }
@@ -376,7 +435,7 @@ int deser_get_message(char const *const j_str, res_message_t *res) {
           ret = deser_milestone(payload, res);
           break;
         case MSG_PAYLOAD_INDEXATION:
-          ret = deser_indexation(payload, res);
+          ret = deser_msg_indexation(payload, res);
           break;
         default:
           // do nothing
@@ -398,9 +457,10 @@ end:
 int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_message_t *res) {
   int ret = -1;
   iota_str_t *cmd = NULL;
+  http_context_t http_ctx;
   http_response_t http_res;
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
+  memset(&http_res, 0, sizeof(http_response_t));
+  char const *const cmd_str = "/api/v1/messages/";
 
   if (conf == NULL || msg_id == NULL || res == NULL) {
     // invalid parameters
@@ -413,42 +473,42 @@ int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_m
     return -1;
   }
 
-  // compose restful api command
-  if ((cmd = iota_str_new(conf->url)) == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
+  cmd = iota_str_reserve(strlen(cmd_str) + IOTA_MESSAGE_ID_HEX_BYTES + 1);
+  if (cmd == NULL) {
+    printf("[%s:%d]: allocate command buffer failed\n", __func__, __LINE__);
     return -1;
   }
+  // composing API command
+  snprintf(cmd->buf, cmd->cap, "%s%s", cmd_str, msg_id);
+  cmd->len = strlen(cmd->buf);
 
-  if (iota_str_append(cmd, "api/v1/messages/")) {
-    printf("[%s:%d]: cmd append failed\n", __func__, __LINE__);
-    goto done;
-  }
-
-  if (iota_str_append(cmd, msg_id)) {
-    printf("[%s:%d]: message id append failed\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
+  // allocate response
   http_res.body = byte_buf_new();
   if (http_res.body == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    ret = -1;
+    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
     goto done;
   }
   http_res.code = 0;
 
-  // send request via http client
-  if ( http_read(http_handle,
-                 &http_res,
-                 "Content-Type: application/json",
-                 NULL) < 0 ) {
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd->buf;
+  http_ctx.use_tls = conf->use_tls;
+  http_ctx.port = conf->port;
 
+  // http open
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
+    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+    goto done;
+  }
+
+  // send request via http client
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  NULL);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
   } else {
     byte_buf2str(http_res.body);
@@ -457,7 +517,7 @@ int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_m
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;

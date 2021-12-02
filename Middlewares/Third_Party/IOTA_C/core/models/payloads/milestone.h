@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "types.h"
+#include "core/types.h"
 
 typedef struct {
   payload_t type;  // Must be set to 1

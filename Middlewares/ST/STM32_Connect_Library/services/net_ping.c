@@ -18,12 +18,13 @@
   */
 #include "net_connect.h"
 #include "net_internals.h"
-
+/*cstat -MISRAC* -DEFINE-* -CERT-EXP19*  */
 #include "lwip/tcpip.h"
 #include "lwip/icmp.h"
 #include "lwip/inet_chksum.h"
 #include "lwip/api.h" /* HAL_GetTick() */
 #include "lwip/ip4.h"
+/*cstat +MISRAC* +DEFINE-* +CERT-EXP19*  */
 
 
 
@@ -60,109 +61,125 @@ static void ping_prepare_echo(struct icmp_echo_hdr *iecho, uint16_t len, uint16_
   ICMPH_CODE_SET(iecho, 0);
   iecho->chksum = 0;
   iecho->id     = PING_ID;
-  iecho->seqno  = (uint16_t) NET_HTONS(ping_seq_num);
+  iecho->seqno  = (uint16_t) lwip_htons(ping_seq_num);
 
   /* fill the additional data buffer with some data */
   for (i = 0; i < data_len; i++)
   {
-    ((char *)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char)i;
+    ((char_t *)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char_t)i;
   }
-
-  /*iecho->chksum = inet_chksum(iecho, len);*/
+  /* Ping data are sent in RAM mode , so LWIP is not computing the checksum by SW */
+#ifndef CHECKSUM_BY_HARDWARE
+  iecho->chksum = inet_chksum(iecho, len);
+#endif /* CHECKSUM_BY_HARDWARE */
 }
 
-uint32_t        HAL_GetTick(void);
-int32_t icmp_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int32_t count, int32_t timeout, int32_t response[])
+
+
+#define NET_IPH_HL(hdr) ((hdr)->_v_hl & 0x0fU)
+
+int32_t icmp_ping(net_if_handle_t *pnetif, net_sockaddr_t *addr, int32_t count, int32_t timeout, int32_t response[])
 {
   int32_t sock;
+  int32_t ret = 0;
   uint32_t ping_start_time;
-  int32_t       ret = -1;
-  sockaddr_t from;
-  int32_t fromlen;
+  net_sockaddr_t from;
+  uint32_t fromlen;
   int32_t len;
   static int32_t ping_seq_num = 1;
-  char buf[64] = "";
+  char_t buf[64] = "";
   struct ip_hdr *iphdr;
-  struct icmp_echo_hdr *iecho, *pecho;
+  struct icmp_echo_hdr *iecho, *pecho = NULL;
   size_t ping_size = sizeof(struct icmp_echo_hdr) + (uint32_t) PING_DATA_SIZE;
-
-  NET_DBG_INFO("ping %s %i bytes\n", net_ntoa(&((sockaddr_in *)addr)->sin_addr), PING_DATA_SIZE);
-
-  if ((sock = net_socket(NET_AF_INET, NET_SOCK_RAW, NET_IPPROTO_ICMP)) < 0)
+  u16_t seqnum;
+  (void) pnetif;
+  sock = net_socket(NET_AF_INET, NET_SOCK_RAW, NET_IPPROTO_ICMP);
+  if (sock < 0)
   {
-    NET_DBG_ERROR("ping: socket fail\n\r");
-    return -1;
+    NET_DBG_ERROR("ping: socket fail\r\n");
+    ret = -1;
   }
-
-#if 0
-  if (net_setsockopt(sock, NET_SOL_SOCKET, NET_SO_BINDTODEVICE, pnetif, sizeof(void *)) < 0)
+  else if (net_setsockopt(sock, NET_SOL_SOCKET, NET_SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
   {
-    NET_DBG_ERROR("ping: setsockopt() bind to network addapater fail\n\r");
-    return -1;
+    NET_DBG_ERROR("ping: setsockopt() fail\r\n");
+    ret = -1;
   }
-#endif /* 0 */
-  if (net_setsockopt(sock, NET_SOL_SOCKET, NET_SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+  else
   {
-    NET_DBG_ERROR("ping: setsockopt() fail\n\r");
-    return -1;
-  }
+    /*cstat -MISRAC2012-Rule-11.5 Malloc */
+    pecho = (struct icmp_echo_hdr *)mem_malloc((mem_size_t)ping_size);
+    /*cstat +MISRAC2012-Rule-11.5 */
 
-  pecho = (struct icmp_echo_hdr *)mem_malloc((mem_size_t)ping_size);
-  if (pecho == NULL)
-  {
-    NET_DBG_ERROR("ping_client_process : message alloc fails\n\r");
-    return -1;
-  }
-
-
-  ((sockaddr_in_t *)addr)->sin_family      = NET_AF_INET;
-  ((sockaddr_in_t *)addr)->sin_port        = (uint16_t) NET_HTONS(NET_IPADDR_ANY);
-
-
-  for (int32_t i = 0; i < count; i++)
-  {
-    response[i] = -1;
-    ping_prepare_echo(pecho, (uint16_t) ping_size, (uint16_t) ping_seq_num);
-
-    if (net_sendto(sock, (uint8_t *)pecho, (int32_t) ping_size, 0, addr, (int32_t) sizeof(sockaddr_t)) < 0)
+    if (pecho == NULL)
     {
-      NET_DBG_INFO("ping_client_process : send fail\n\r");
-      break;
+      NET_DBG_ERROR("ping_client_process : message alloc fails\r\n");
+      ret = -1;
     }
+  }
 
-    ping_start_time = HAL_GetTick();
-    do
+  if (ret == 0)
+  {
+    addr->sa_family      = NET_AF_INET;
+    net_set_port(addr, 0U);
+
+    for (int32_t i = 0; i < count; i++)
     {
-
-      len = net_recvfrom(sock, (uint8_t *)buf, (int32_t) ping_size, 0, &from, &fromlen);
-      if (len >= (int32_t)(sizeof(struct ip_hdr) + sizeof(struct icmp_echo_hdr)))
+      response[i] = -1;
+      /* add useless test for MISRA on pecho */
+      if (pecho != NULL)
       {
-        iphdr = (struct ip_hdr *)buf;
-        iecho = (struct icmp_echo_hdr *)(buf + (IPH_HL(iphdr) * 4U));
-        if ((iecho->id == (uint16_t)PING_ID) && (iecho->seqno == NET_HTONS(ping_seq_num)))
+        ping_prepare_echo(pecho, (uint16_t) ping_size, (uint16_t) ping_seq_num);
+      }
+
+      if (net_sendto(sock, (uint8_t *)pecho, (int32_t) ping_size, 0, addr, (int32_t) sizeof(net_sockaddr_t)) < 0)
+      {
+        NET_DBG_INFO("ping_client_process : send fail\r\n");
+        break;
+      }
+
+      ping_start_time = NET_TICK();
+      do
+      {
+
+        len = net_recvfrom(sock, (uint8_t *)buf, (int32_t) ping_size, 0, &from, &fromlen);
+        if (len >= (int32_t)(sizeof(struct ip_hdr) + sizeof(struct icmp_echo_hdr)))
         {
-          if (ICMPH_TYPE(iecho) == (uint8_t) ICMP_ER)
+
+          /*cstat -MISRAC2012-Rule-11.3 Cast */
+          iphdr = (struct ip_hdr *)buf;
+          iecho = (struct icmp_echo_hdr *)(buf + ((NET_IPH_HL(iphdr)) * 4U));
+          /*cstat +MISRAC2012-Rule-11.3 Cast */
+          seqnum = lwip_htons((uint16_t) ping_seq_num);
+          if ((iecho->id == (uint16_t)PING_ID) && (iecho->seqno == seqnum))
           {
-            ret = 0;
-            response[i] = (int32_t)HAL_GetTick() - (int32_t) ping_start_time;
-            break;
-          }
-          else
-          {
-            NET_DBG_ERROR("ICMP Other Response received \n\r");
+            if (ICMPH_TYPE(iecho) == (uint8_t) ICMP_ER)
+            {
+              uint32_t  delta;
+              ret = 0;
+              delta = NET_TICK() - ping_start_time;
+              response[i] = (int32_t) delta;
+              break;
+            }
+            else
+            {
+              NET_DBG_ERROR("ICMP Other Response received \r\n");
+            }
           }
         }
-      }
-      else
-      {
-        uint32_t now = HAL_GetTick();
-        NET_DBG_ERROR("no data start : %ld  .. %ld\n\r", ping_start_time, now);
-      }
-    } while (HAL_GetTick() < (ping_start_time + (uint32_t) timeout));
-    ping_seq_num++;
+        else
+        {
+          uint32_t now = NET_TICK();
+          NET_DBG_ERROR("no data start %ld : %lu  .. %lu\r\n", len, ping_start_time,  now);
+        }
+      } while (NET_TICK() < (ping_start_time + (uint32_t) timeout));
+      ping_seq_num++;
+    }
+    if (pecho != NULL)
+    {
+      mem_free(pecho);
+    }
+    (void) net_closesocket(sock);
   }
-  mem_free(pecho);
-  (void) net_closesocket(sock);
   return ret;
 }
 

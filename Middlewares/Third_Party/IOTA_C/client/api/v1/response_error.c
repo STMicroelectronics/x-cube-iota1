@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "json_keys.h"
-#include "response_error.h"
-#include "allocator.h"
+#include "client/api/json_keys.h"
+#include "client/api/v1/response_error.h"
+#include "core/utils/allocator.h"
 
 void res_err_free(res_err_t *err) {
   if (err) {

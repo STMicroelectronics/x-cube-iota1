@@ -20,26 +20,43 @@
 /*#define ENABLE_NET_DBG_INFO */
 #include "net_connect.h"
 #include "net_internals.h"
+/*cstat -MISRAC* -DEFINE-* -CERT-EXP19*  */
+#include "cellular_version.h"
 
+#if defined(CELLULAR_INIT_FIRMWARE_VERSION)
 #include "cellular_init.h"
 #include "cellular_service_os.h"
+#elif defined(CELLULAR_VERSION_FIRMWARE_VERSION)
+#include "cellular_mngt.h"
+#include "cellular_datacache.h"
+#include "com_sockets.h"
+#endif /* defined(CELLULAR_INIT_FIRMWARE_VERSION) */
 
 #include "dc_common.h"
-#include "dc_control.h"
+/*cstat +MISRAC* +DEFINE-* +CERT-EXP19*  */
 
-
+#define OSWAITFOREVER 0xFFFFFFFFU
 /* Private defines -----------------------------------------------------------*/
 #define NET_CELLULAR_MAX_CHANNEL_NBR    4
 
-#define CELLULAR_FREE_SOCKET            0
-#define CELLULAR_ALLOCATED_SOCKET       1
-#define CELLULAR_BIND_SOCKET            2
-#define CELLULAR_SEND_OK                4
-#define CELLULAR_RECV_OK                8
-#define CELLULAR_CONNECTED_SOCKET      16
+#define CELLULAR_FREE_SOCKET            0U
+#define CELLULAR_ALLOCATED_SOCKET       1U
+#define CELLULAR_BIND_SOCKET            2U
+#define CELLULAR_SEND_OK                4U
+#define CELLULAR_RECV_OK                8U
+#define CELLULAR_CONNECTED_SOCKET      16U
 #define CELLULAR_CONNECTED_SOCKET_RW   (CELLULAR_CONNECTED_SOCKET | CELLULAR_SEND_OK | CELLULAR_RECV_OK)
 
 #define CELLULAR_SOCK_DEFAULT_TO    10000
+#define CELLULAR_ATTACHMENT_TIMEOUT    180000U
+
+#if !defined NET_CELLULAR_THREAD_PRIO
+#define NET_CELLULAR_THREAD_PRIO   osPriorityAboveNormal
+#endif  /* !defined NET_CELLULAR_THREAD_PRIO */
+
+#if !defined NET_CELLULAR_THREAD_STACK_SIZE
+#define NET_CELLULAR_THREAD_STACK_SIZE  DEFAULT_THREAD_STACK_SIZE
+#endif  /* !defined NET_CELLULAR_THREAD_PRIO */
 
 typedef enum
 {
@@ -51,9 +68,9 @@ typedef enum
 /* Private typedef -----------------------------------------------------------*/
 typedef struct
 {
-  const char *apn;
-  const char *username;
-  const char *password;
+  const char_t *apn;
+  const char_t *username;
+  const char_t *password;
   bool use_internal_sim;
 } cellular_data_t;
 
@@ -65,18 +82,12 @@ typedef struct
 /* Private variables ---------------------------------------------------------*/
 static osThreadId CellIfThreadId = NULL;
 static osMessageQId cellular_queue;
-static bool connection_requested;
-static bool stop_requested;
-dc_cellular_info_t dc_cellular_info;
-dc_cellular_data_info_t  dc_cellular_data_info;
-dc_sim_info_t dc_sim_info;
-dc_nifman_info_t dc_nifman_info;
-dc_ppp_client_info_t dc_ppp_client_info;
+static volatile bool connection_requested;
+static volatile bool stop_requested;
+static dc_cellular_info_t dc_cellular_info;
 
 static cellular_Channel_t CellularChannel[NET_CELLULAR_MAX_CHANNEL_NBR] = {.0};
 
-/* Declaration of cellular network interface constructor */
-int32_t cellular_net_driver(net_if_handle_t *pnetif);
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,47 +104,72 @@ static int32_t net_cellular_if_disconnect(net_if_handle_t *pnetif);
 
 /* Socket BSD Like APIs */
 static int32_t net_cellular_socket(int32_t domain, int32_t type, int32_t protocol);
-static int32_t net_cellular_bind(int32_t sock, const sockaddr_t *addr, int32_t addrlen);
+static int32_t net_cellular_bind(int32_t sock, const net_sockaddr_t *addr, uint32_t addrlen);
 static int32_t net_cellular_listen(int32_t sock, int32_t backlog);
-static int32_t net_cellular_accept(int32_t sock, sockaddr_t *addr, int32_t *addrlen);
-static int32_t net_cellular_connect(int32_t sock, const sockaddr_t *addr, int32_t addrlen);
+static int32_t net_cellular_accept(int32_t sock, net_sockaddr_t *addr, uint32_t *addrlen);
+static int32_t net_cellular_connect(int32_t sock, const net_sockaddr_t *addr, uint32_t addrlen);
 static int32_t net_cellular_send(int32_t sock, uint8_t *buf, int32_t len, int32_t flags);
 static int32_t net_cellular_recv(int32_t sock, uint8_t *buf, int32_t len, int32_t flags);
-static int32_t net_cellular_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *to,
-                                   int32_t tolen);
-static int32_t net_cellular_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *from,
-                                     int32_t *fromlen);
+static int32_t net_cellular_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, net_sockaddr_t *to,
+                                   uint32_t tolen);
+static int32_t net_cellular_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, net_sockaddr_t *from,
+                                     uint32_t *fromlen);
 static int32_t net_cellular_setsockopt(int32_t sock, int32_t level, int32_t optname, const void *optvalue,
-                                       int32_t optlen);
-static int32_t net_cellular_getsockopt(int32_t sock, int32_t level, int32_t optname, void *optvalue, int32_t *optlen);
-static int32_t net_cellular_getsockname(int32_t sock, sockaddr_t *name, int32_t *namelen);
-static int32_t net_cellular_getpeername(int32_t sock, sockaddr_t *name, int32_t *namelen);
+                                       uint32_t optlen);
+static int32_t net_cellular_getsockopt(int32_t sock, int32_t level, int32_t optname, void *optvalue, uint32_t *optlen);
+static int32_t net_cellular_getsockname(int32_t sock, net_sockaddr_t *name, uint32_t *namelen);
+static int32_t net_cellular_getpeername(int32_t sock, net_sockaddr_t *name, uint32_t *namelen);
 static int32_t net_cellular_close(int32_t sock, bool isaclone);
 static int32_t net_cellular_shutdown(int32_t sock, int32_t mode);
 
 /* Service APIs */
-static int32_t net_cellular_if_gethostbyname(net_if_handle_t *pnetif, sockaddr_t *addr, char_t *name);
-static int32_t net_cellular_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int32_t count, int32_t delay, int32_t response[]);
+static int32_t net_cellular_if_gethostbyname(net_if_handle_t *pnetif, net_sockaddr_t *addr, char_t *name);
+static int32_t net_cellular_ping(net_if_handle_t *pnetif, net_sockaddr_t *addr, int32_t count,
+ int32_t delay, int32_t response[]);
 
 /* class extension APIs */
 static int32_t net_cellular_get_radio_info(net_cellular_radio_results_t *results);
 
 
 /* Internal usage */
-void cellif_input(void const *argument);
-static void cellular_set_config(const char *oper_ap_code,
-                                const char *username,
-                                const char *password,
-                                bool use_internal_sim);
+static void cellif_input(void const *argument);
+
+#ifdef NET_CELLULAR_CREDENTIAL_V2
+static void cellular_set_config(const net_cellular_credentials_t* credentials);
+#else
+static void cellular_set_config(const char_t *oper_ap_code,const char_t *username,
+    const char_t *password,bool use_internal_sim);
+#endif /* NET_CELLULAR_CREDENTIAL_V2 */
+
 static void cellular_notif_cb(dc_com_event_id_t dc_event_id, const void *private_gui_data);
 static uint16_t Generate_RngLocalPort(uint16_t localport);
+
+
+static void netsockaddr2com(com_sockaddr_t *com_addr,const net_sockaddr_t *addr, uint32_t addrlen)
+{
+  com_addr->sa_len = (uint8_t) addrlen;
+  com_addr->sa_family =(uint8_t) ( (addr->sa_family == (uint8_t) NET_AF_INET) ? COM_AF_INET : COM_AF_UNSPEC);
+  (void) memcpy(&(com_addr->sa_data), &(addr->sa_data), 14);
+}
+
+static void com2netsockaddr(net_sockaddr_t *addr, com_sockaddr_t *com_addr, uint32_t addrlen)
+{
+  (void) memset(addr, 0, addrlen);
+  addr->sa_len = (uint8_t)  addrlen;
+  addr->sa_family = NET_AF_INET;
+  (void) memcpy(&(addr->sa_data), &(com_addr->sa_data), 14);
+}
+
+
 
 static net_if_drv_t   *net_cellular_init_class(void)
 {
   net_if_drv_t *p;
-
+/*cstat -MISRAC2012-Rule-11.5 */
   p = NET_MALLOC(sizeof(net_if_drv_t));
-  if (p)
+/*cstat +MISRAC2012-Rule-11.5 */
+
+  if (p != NULL)
   {
     p->if_class = NET_INTERFACE_CLASS_CELLULAR;
 
@@ -148,26 +184,26 @@ static net_if_drv_t   *net_cellular_init_class(void)
     p->if_disconnect = net_cellular_if_disconnect;
 
     /* Socket BSD Like APIs */
-    p->socket        = net_cellular_socket;
-    p->bind          = net_cellular_bind;
-    p->listen        = net_cellular_listen;
-    p->accept        = net_cellular_accept;
-    p->connect       = net_cellular_connect;
-    p->send          = net_cellular_send;
-    p->recv          = net_cellular_recv;
-    p->sendto        = net_cellular_sendto;
-    p->recvfrom      = net_cellular_recvfrom;
-    p->setsockopt    = net_cellular_setsockopt;
-    p->getsockopt    = net_cellular_getsockopt;
-    p->getsockname   = net_cellular_getsockname;
-    p->getpeername   = net_cellular_getpeername;
-    p->close         = net_cellular_close;
-    p->shutdown      = net_cellular_shutdown;
+    p->psocket        = net_cellular_socket;
+    p->pbind          = net_cellular_bind;
+    p->plisten        = net_cellular_listen;
+    p->paccept        = net_cellular_accept;
+    p->pconnect       = net_cellular_connect;
+    p->psend          = net_cellular_send;
+    p->precv          = net_cellular_recv;
+    p->psendto        = net_cellular_sendto;
+    p->precvfrom      = net_cellular_recvfrom;
+    p->psetsockopt    = net_cellular_setsockopt;
+    p->pgetsockopt    = net_cellular_getsockopt;
+    p->pgetsockname   = net_cellular_getsockname;
+    p->pgetpeername   = net_cellular_getpeername;
+    p->pclose         = net_cellular_close;
+    p->pshutdown      = net_cellular_shutdown;
 
     /* Service */
-    p->gethostbyname = net_cellular_if_gethostbyname;
+    p->pgethostbyname = net_cellular_if_gethostbyname;
 
-    p->ping = net_cellular_ping;
+    p->pping = net_cellular_ping;
   }
   else
   {
@@ -186,6 +222,7 @@ static net_if_drv_t   *net_cellular_init_class(void)
   */
 int32_t cellular_net_driver(net_if_handle_t *pnetif)
 {
+  int32_t ret;
   net_if_drv_t *p;
 
   p = net_cellular_init_class();
@@ -193,26 +230,28 @@ int32_t cellular_net_driver(net_if_handle_t *pnetif)
   if (NULL == p)
   {
     NET_DBG_ERROR("can't allocate memory for cellular driver class");
-    return NET_ERROR_NO_MEMORY;
+    ret = NET_ERROR_NO_MEMORY;
   }
   else
   {
     /* class extension */
+    /*cstat -MISRAC2012-Rule-11.5 */
     p->extension.cellular = NET_MALLOC(sizeof(net_if_cellular_class_extension_t));
+    /*cstat +MISRAC2012-Rule-11.5 */
     if (NULL == p->extension.cellular)
     {
       NET_DBG_ERROR("can't allocate memory for cellular_driver class\n");
       NET_FREE(p);
-      p = NULL;
+      ret = NET_ERROR_NO_MEMORY;
     }
     else
     {
       p->extension.cellular->get_radio_results = net_cellular_get_radio_info;
       pnetif->pdrv = p;
+      ret = net_cellular_if_init(pnetif);
     }
   }
-
-  return net_cellular_if_init(pnetif);
+  return ret;
 }
 
 /**
@@ -223,11 +262,12 @@ int32_t cellular_net_driver(net_if_handle_t *pnetif)
   */
 static int32_t net_cellular_if_init(net_if_handle_t *pnetif)
 {
+  (void) pnetif;
   /* statical init of cellular components */
   connection_requested = false;
   stop_requested = false;
   cellular_init();
-  net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_INITIALIZED, NULL);
+
   return  NET_OK;
 }
 
@@ -245,8 +285,6 @@ static int32_t net_cellular_if_deinit(net_if_handle_t *pnetif)
   NET_FREE(pnetif->pdrv);
   pnetif->pdrv = NULL;
 
-  net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_DEINITIALIZED, NULL);
-
   return  NET_OK;
 }
 
@@ -262,51 +300,51 @@ static int32_t net_cellular_if_deinit(net_if_handle_t *pnetif)
 static int32_t net_cellular_if_start(net_if_handle_t *pnetif)
 {
   const net_cellular_credentials_t *credentials =  pnetif->pdrv->extension.cellular->credentials;
-
-  net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_STARTING, NULL);
+  int32_t       ret;
 
   NET_PRINT("\n*** C2C connection ***\n\n");
 
   /* check APN is entered */
-  if ((credentials->apn == 0) || (strlen(credentials->apn) == 0))
+#ifdef NET_CELLULAR_CREDENTIAL_V2
+  if ((credentials->sim_slot[NET_CELLULAR_DEFAULT_SIM_SLOT].apn == 0) ||
+      (strlen((char_t *)credentials->sim_slot[NET_CELLULAR_DEFAULT_SIM_SLOT].apn) == 0U))
+#else
+  if ((credentials->apn == 0) || (strlen(credentials->apn) == 0U))
+#endif /* NET_CELLULAR_CREDENTIAL_V2 */
   {
     NET_DBG_ERROR("operator credentials (APN at least) must be set");
-    return NET_ERROR_PARAMETER;
+    ret =  NET_ERROR_PARAMETER;
   }
-
-
-  NET_PRINT("Initializing the cellular module\n");
-
-  osMessageQDef(CellIfqueue, 6, uint32_t);
-  cellular_queue = osMessageCreate(osMessageQ(CellIfqueue), NULL);
-
-  /* create the task that handles the cellular */
-  osThreadDef(CellIf, cellif_input, CTRL_THREAD_PRIO, 0, DEFAULT_THREAD_STACK_SIZE);
-  CellIfThreadId = osThreadCreate(osThread(CellIf), pnetif);
-
-  if (CellIfThreadId == NULL)
-  {
-    Error_Handler();
-
-  }
-#if (STACK_ANALYSIS_TRACE == 1)
   else
   {
-    stackAnalysis_addStackSizeByHandle(CellIfThreadId, DEFAULT_THREAD_STACK_SIZE);
-  }
-#endif /* STACK_ANALYSIS_TRACE */
+    osMessageQDef(CellIfqueue, 6, uint32_t);
+    cellular_queue = osMessageCreate(osMessageQ(CellIfqueue), NULL);
 
-  return NET_OK;
+    /* create the task that handles the cellular */
+    osThreadDef(CellIf, cellif_input, NET_CELLULAR_THREAD_PRIO, 0, NET_CELLULAR_THREAD_STACK_SIZE);
+    CellIfThreadId = osThreadCreate(osThread(CellIf), pnetif);
+
+    if (CellIfThreadId == NULL)
+    {
+      Error_Handler();
+
+    }
+#if (STACK_ANALYSIS_TRACE == 1)
+    else
+    {
+      stackAnalysis_addStackSizeByHandle(CellIfThreadId, NET_CELLULAR_THREAD_STACK_SIZE);
+    }
+#endif /* STACK_ANALYSIS_TRACE */
+    ret = NET_OK;
+  }
+  return ret;
 }
 
 
 static int32_t net_cellular_if_stop(net_if_handle_t *pnetif)
 {
+  (void) pnetif;
   dc_cellular_target_state_t target_state;
-
-  NET_PRINT("Stopping the cellular module\n");
-
-  net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_STOPPING, NULL);
   stop_requested = true;
 
   target_state.rt_state     = DC_SERVICE_ON;
@@ -329,7 +367,13 @@ static int32_t net_cellular_if_stop(net_if_handle_t *pnetif)
   */
 static int32_t net_cellular_if_connect(net_if_handle_t *pnetif)
 {
-  net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_CONNECTING, NULL);
+  (void) pnetif;
+  dc_cellular_target_state_t target_state;
+
+  /* 'cst targetstate full' command:  new modem state requested: modem manages full data transfer */
+  target_state.rt_state     = DC_SERVICE_ON;
+  target_state.target_state = DC_TARGET_STATE_FULL;
+  (void)dc_com_write(&dc_com_db, DC_CELLULAR_TARGET_STATE_CMD, (void *)&target_state, sizeof(target_state));
   connection_requested = true;
   return NET_OK;
 }
@@ -341,7 +385,7 @@ static int32_t net_cellular_if_connect(net_if_handle_t *pnetif)
   */
 static int32_t net_cellular_if_disconnect(net_if_handle_t *pnetif)
 {
-  NET_DBG_PRINT("\nEntering in net_cellular_if_disconnect()\n");
+  (void) net_state_manage_event(pnetif, NET_EVENT_INTERFACE_READY);
   return  NET_OK;
 }
 
@@ -360,9 +404,9 @@ static int32_t net_cellular_if_disconnect(net_if_handle_t *pnetif)
   */
 static int32_t net_cellular_socket(int32_t domain, int32_t type, int32_t protocol)
 {
-  int32_t ret = NET_OK;
+  int32_t ret;
 
-  int32_t net_socket;
+  int32_t net_socketv;
   int32_t net_family = COM_AF_INET;
   int32_t net_type = COM_SOCK_DGRAM;
   int32_t net_protocol = COM_IPPROTO_UDP;
@@ -416,22 +460,22 @@ static int32_t net_cellular_socket(int32_t domain, int32_t type, int32_t protoco
     NET_DBG_INFO("Trying to find a free socket\n");
 
     /* Find and create a free socket on the network interface */
-    net_socket = com_socket(net_family, net_type, net_protocol);
+    net_socketv = com_socket(net_family, net_type, net_protocol);
 
     /* A free socket has been found */
-    if (net_socket >= 0)
+    if (net_socketv >= 0)
     {
-      NET_DBG_INFO("Found socket : %lu\n", net_socket);
+      NET_DBG_INFO("Found socket : %lu\n", net_socketv);
 
-      if (net_socket < NET_CELLULAR_MAX_CHANNEL_NBR)
+      if (net_socketv < NET_CELLULAR_MAX_CHANNEL_NBR)
       {
-        CellularChannel[net_socket].status = CELLULAR_ALLOCATED_SOCKET;
-        ret = net_socket;
+        CellularChannel[net_socketv].status = CELLULAR_ALLOCATED_SOCKET;
+        ret = net_socketv;
       }
       else
       {
         NET_DBG_ERROR("More socket supported (%lu) than allowed (%d)",
-                      net_socket,
+                      net_socketv,
                       NET_CELLULAR_MAX_CHANNEL_NBR);
         ret = NET_ERROR_INVALID_SOCKET;
       }
@@ -446,17 +490,13 @@ static int32_t net_cellular_socket(int32_t domain, int32_t type, int32_t protoco
   return ret;
 }
 
-static int32_t net_cellular_bind(int32_t sock, const sockaddr_t *addr, int32_t addrlen)
+static int32_t net_cellular_bind(int32_t sock, const net_sockaddr_t *addr, uint32_t addrlen)
 {
   int32_t ret;
-  com_sockaddr_in_t saddr;
-
-  saddr.sin_len = sizeof(com_sockaddr_in_t);
-  saddr.sin_family = (((sockaddr_in_t *)addr)->sin_family == NET_AF_INET) ? COM_AF_INET : COM_AF_UNSPEC;
-  saddr.sin_port = ((sockaddr_in_t *)addr)->sin_port;
-  memcpy(&saddr.sin_addr, &((sockaddr_in_t *)addr)->sin_addr, 4);
-
-  ret = com_bind(sock, (com_sockaddr_t *)&saddr, sizeof(com_sockaddr_in_t));
+  (void) addrlen;
+  com_sockaddr_t saddr;
+  netsockaddr2com(&saddr, addr, sizeof(com_sockaddr_t));
+  ret = com_bind(sock, &saddr, (int32_t) sizeof(com_sockaddr_t));
 
   return (ret == COM_SOCKETS_ERR_OK) ? NET_OK : NET_ERROR_GENERIC;
 }
@@ -468,20 +508,16 @@ static int32_t net_cellular_listen(int32_t sock, int32_t backlog)
   return (ret == COM_SOCKETS_ERR_OK) ? NET_OK : NET_ERROR_GENERIC;
 }
 
-static int32_t net_cellular_accept(int32_t sock, sockaddr_t *addr, int32_t *addrlen)
+static int32_t net_cellular_accept(int32_t sock, net_sockaddr_t *addr, uint32_t *addrlenv)
 {
   int32_t ret;
   com_sockaddr_t        com_addr;
-  sockaddr_in_t *saddr = (sockaddr_in_t *) addr;
+  int32_t               addrlen = (int32_t) sizeof(com_sockaddr_t);
 
-  ret = com_accept(sock, &com_addr, addrlen);
+  ret = com_accept(sock, &com_addr, &addrlen);
   if (ret > 0)
   {
-    *addrlen = sizeof(sockaddr_in_t);
-    memset(saddr, 0, *addrlen);
-    saddr->sin_len = *addrlen;
-    saddr->sin_family = NET_AF_INET;
-    memcpy(&(saddr->sin_addr), &com_addr.sa_data, 4);
+    com2netsockaddr(addr, &com_addr, *addrlenv);
     CellularChannel[ret].status = CELLULAR_CONNECTED_SOCKET_RW;
   }
   return (ret > 0) ? ret : NET_ERROR_GENERIC;
@@ -495,17 +531,19 @@ static int32_t net_cellular_accept(int32_t sock, sockaddr_t *addr, int32_t *addr
   * @param  sock must be created
   *         addr point to an addresses structure from the Socket library
   *         (If this is a TCP socket,
-  *         connect() will actually perfom TCP negociation to open a connection)
+  *         connect() will actually perform TCP negotiation to open a connection)
   *         addrlen has a size compatible with struct sockaddr_in*
   * @retval ret
   *          < 0  : if there is an error.
   *          = 0  : on success.
   */
-static int32_t net_cellular_connect(int32_t sock, const sockaddr_t *addr, int32_t addrlen)
+static int32_t net_cellular_connect(int32_t sock, const net_sockaddr_t *addrp, uint32_t addrlen)
 {
   int32_t  ret;
-  com_sockaddr_in_t address;
-  sockaddr_in_t *dest;
+  uint16_t            port;
+  net_sockaddr_t        addr;
+
+  (void) memcpy(&addr, addrp, addrlen);
 
   if ((sock < 0) || (sock >= NET_CELLULAR_MAX_CHANNEL_NBR))
   {
@@ -515,24 +553,19 @@ static int32_t net_cellular_connect(int32_t sock, const sockaddr_t *addr, int32_
   else
   {
     /* addr is an outbound address */
-    if (addrlen == sizeof(com_sockaddr_in_t))
+    if (addrlen == sizeof(net_sockaddr_in_t))
     {
-
-
       NET_DBG_INFO("Trying to connect socket %ld\n", sock);
+      port = net_get_port(&addr);
+      port = Generate_RngLocalPort(port);
+      net_set_port(&addr, port);
 
-      dest = (sockaddr_in_t *) addr;
-
-      memset(&address, 0, sizeof(com_sockaddr_t));
-
-      address.sin_len     = dest->sin_len;
-      address.sin_family  = (uint8_t)COM_AF_INET;
-      address.sin_port    = NET_HTONS(Generate_RngLocalPort(NET_NTOHS(dest->sin_port)));
-      memcpy(&address.sin_addr.s_addr, &dest->sin_addr, sizeof(com_in_addr_t));
-
+      addr.sa_family = COM_AF_INET;
       if (com_connect(sock,
-                      (com_sockaddr_t *)&address,
-                      (int32_t)sizeof(com_sockaddr_in_t)) == COM_SOCKETS_ERR_OK)
+                      /*cstat -MISRAC2012-Rule-11.3 */
+                      (com_sockaddr_t *) &addr,
+                      /*cstat +MISRAC2012-Rule-11.3*/
+                      (int32_t) addrlen) == COM_SOCKETS_ERR_OK)
       {
         NET_DBG_INFO("connect done on socket %ld\n", sock);
         ret = NET_OK;
@@ -564,27 +597,27 @@ static int32_t net_cellular_connect(int32_t sock, const sockaddr_t *addr, int32_
   *          Random Local Port
   */
 
-#define PORTBASE  49152
+#define PORTBASE  49152U
 static uint16_t Generate_RngLocalPort(uint16_t localport)
 {
   uint16_t RngPort;
   static uint16_t rnglocalport = 0;
-  uint16_t random_number = 0;
+  uint16_t random_number;
 
-  if (localport != 0)
+  if (localport != 0u)
   {
     RngPort = localport;
   }
   else
   {
-    if (rnglocalport == 0)  /* just at first open since board reboot */
+    if (rnglocalport == 0u)  /* just at first open since board reboot */
     {
-      random_number = rand() & 0xffff;
-      rnglocalport = ((uint16_t)(random_number & 0xFFFF) >> 2) + PORTBASE;
+      random_number = (uint16_t) rand() & 0xffffu;
+      rnglocalport = ((uint16_t)(random_number & 0xFFFFu) >> 2u) + PORTBASE;
     }
     else /* from second time function execution, increment by one */
     {
-      rnglocalport += 1;
+      rnglocalport += 1u;
     }
 
     if (rnglocalport < PORTBASE) /* Wrap-around */
@@ -599,32 +632,37 @@ static uint16_t Generate_RngLocalPort(uint16_t localport)
 
 
 
-static int32_t conv(int32_t ret)
+static int32_t conv(int32_t retv)
 {
-  if (ret > 0)
+  int32_t ret = retv;
+  if (ret <= 0)
   {
-    return ret;
-  }
-  switch (ret)
-  {
-    case 0:
-      /* With DONT WAIT MODE return 0 when no data is available 
-      ret = NET_ERROR_CLOSE_SOCKET;  */
-      ret = NET_TIMEOUT;
 
-      break;
+    switch (ret)
+    {
+      case 0:
+        /* With DON'T WAIT MODE return 0 when no data is available
+        ret = NET_ERROR_CLOSE_SOCKET;  */
+        ret = NET_TIMEOUT;
 
-    case COM_SOCKETS_ERR_WOULDBLOCK:
-      ret = NET_TIMEOUT;
-      break;
+        break;
 
-    case COM_SOCKETS_ERR_CLOSING:
-      ret = NET_ERROR_CLOSE_SOCKET;
-      break;
+      case COM_SOCKETS_ERR_WOULDBLOCK:
+        ret = NET_TIMEOUT;
+        break;
 
-    case COM_SOCKETS_ERR_TIMEOUT:
-      ret = NET_TIMEOUT;
-      break;
+      case COM_SOCKETS_ERR_CLOSING:
+        ret = NET_ERROR_CLOSE_SOCKET;
+        break;
+
+      case COM_SOCKETS_ERR_TIMEOUT:
+        ret = NET_TIMEOUT;
+        break;
+
+      default:
+        ret = NET_ERROR_CLOSE_SOCKET;
+        break;
+    }
   }
   return ret;
 }
@@ -652,7 +690,7 @@ static int32_t net_cellular_send(int32_t sock, uint8_t *buf, int32_t len, int32_
   }
   else
   {
-    if (!(CellularChannel[sock].status & CELLULAR_SEND_OK))
+    if ((CellularChannel[sock].status & CELLULAR_SEND_OK) == 0U)
     {
       NET_DBG_INFO("Socket %ld has shutdown its sending\n", sock);
       ret = NET_ERROR_SOCKET_FAILURE;
@@ -665,7 +703,7 @@ static int32_t net_cellular_send(int32_t sock, uint8_t *buf, int32_t len, int32_
       ret = com_send(sock,
                      buf,
                      len,
-                     (flags & NET_MSG_DONTWAIT) ? COM_MSG_DONTWAIT : COM_MSG_WAIT);
+                     (((uint8_t) flags & NET_MSG_DONTWAIT) != 0U) ? COM_MSG_DONTWAIT : COM_MSG_WAIT);
       if (ret < 0)
       {
         NET_DBG_ERROR("Send failed : %lu", ret);
@@ -698,7 +736,7 @@ static int32_t net_cellular_send(int32_t sock, uint8_t *buf, int32_t len, int32_
   */
 static int32_t net_cellular_recv(int32_t sock, uint8_t *buf, int32_t len, int32_t flags)
 {
-  int32_t ret = -1;
+  int32_t ret;
 
   if ((sock < 0) || (sock >= NET_CELLULAR_MAX_CHANNEL_NBR))
   {
@@ -707,7 +745,7 @@ static int32_t net_cellular_recv(int32_t sock, uint8_t *buf, int32_t len, int32_
   }
   else
   {
-    if (!(CellularChannel [sock].status & CELLULAR_RECV_OK))
+    if ((CellularChannel [sock].status & CELLULAR_RECV_OK) == 0U)
     {
       NET_DBG_INFO("Socket %ld has shutdown its receipt\n", sock);
       ret = NET_ERROR_SOCKET_FAILURE;
@@ -718,11 +756,15 @@ static int32_t net_cellular_recv(int32_t sock, uint8_t *buf, int32_t len, int32_
       ret = com_recv(sock,
                      buf,
                      len,
-                     (flags & NET_MSG_DONTWAIT) ? COM_MSG_DONTWAIT : COM_MSG_WAIT);
+                     (((uint8_t)flags & NET_MSG_DONTWAIT) != 0U) ? COM_MSG_DONTWAIT : COM_MSG_WAIT);
 
       if (ret > 0)
       {
         NET_DBG_INFO("Amount of received data (ret) = %d\n", ret);
+        if (ret > len)
+        {
+          NET_WARNING("Received more than requested (received %ld - requested %ld)\n", ret, len);
+        }
       }
       ret = conv(ret);
     }
@@ -730,38 +772,29 @@ static int32_t net_cellular_recv(int32_t sock, uint8_t *buf, int32_t len, int32_
   return ret;
 }
 
-static int32_t net_cellular_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *to,
-                                   int32_t tolen)
+static int32_t net_cellular_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, net_sockaddr_t *to,
+                                   uint32_t tolen)
 {
   int32_t ret;
-
-  com_sockaddr_in_t addr;
-  addr.sin_len = sizeof(com_sockaddr_in_t);
-  addr.sin_family = (to->sa_family == NET_AF_INET) ? COM_AF_INET : COM_AF_UNSPEC;
-  addr.sin_port = ((sockaddr_in_t *)to)->sin_port;
-  memcpy(&addr.sin_addr, &((sockaddr_in_t *)to)->sin_addr, 4);
-
-  ret = com_sendto(sock, buf, len, flags, (com_sockaddr_t *) &addr, sizeof(com_sockaddr_in_t));
+  com_sockaddr_t addr;
+  (void) tolen;
+  netsockaddr2com(&addr, to, sizeof(com_sockaddr_t));
+  ret = com_sendto(sock, buf, len, flags, &addr, (int32_t) sizeof(com_sockaddr_t));
 
   return conv(ret);
 }
 
-static int32_t net_cellular_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *from,
-                                     int32_t *fromlen)
+static int32_t net_cellular_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, net_sockaddr_t *from,
+                                     uint32_t *fromlen)
 {
   int32_t ret;
   com_sockaddr_t addr;
-  int32_t addrlen = sizeof(com_sockaddr_t);
+  int32_t addrlen = (int32_t) sizeof(com_sockaddr_t);
 
   ret = com_recvfrom(sock, buf, len, flags, &addr, &addrlen);
-
   if (ret >= 0)
   {
-    memset(from, 0, *fromlen);
-    ((sockaddr_in_t *)from)->sin_len = sizeof(sockaddr_in_t);
-    ((sockaddr_in_t *)from)->sin_family = (addr.sa_family == COM_AF_INET) ? NET_AF_INET : NET_AF_UNSPEC;
-    ((sockaddr_in_t *)from)->sin_port = ((com_sockaddr_in_t *)&addr)->sin_port;
-    memcpy(&((sockaddr_in_t *)from)->sin_addr, &((com_sockaddr_in_t *)&addr)->sin_addr, 4);
+    com2netsockaddr(from, &addr, *fromlen);
   }
 
   return conv(ret);
@@ -781,10 +814,14 @@ static int32_t net_cellular_recvfrom(int32_t sock, uint8_t *buf, int32_t len, in
   *          = 0   : on success
   */
 static int32_t net_cellular_setsockopt(int32_t sock, int32_t level, int32_t optname, const void *optvalue,
-                                       int32_t optlen)
+                                       uint32_t optlen)
 {
   int32_t ret = NET_ERROR_PARAMETER;
-
+  /*cstat -MISRAC2012-Rule-11.5 -MISRAC2012-Rule-11.8 */
+  int32_t       *optint32 = (int32_t *) optvalue;
+  /*cstat +MISRAC2012-Rule-11.5 +MISRAC2012-Rule-11.8 */
+  (void) level;
+  (void) optlen;
   if ((sock < 0) || (sock >= NET_CELLULAR_MAX_CHANNEL_NBR))
   {
     NET_DBG_ERROR("invalid socket");
@@ -797,7 +834,7 @@ static int32_t net_cellular_setsockopt(int32_t sock, int32_t level, int32_t optn
       case NET_SO_RCVTIMEO:
         if (NULL != optvalue)
         {
-          if (0 == com_setsockopt(sock, COM_SOL_SOCKET, COM_SO_RCVTIMEO, (int32_t *)optvalue, sizeof(int)))
+          if (0 == com_setsockopt(sock, COM_SOL_SOCKET, COM_SO_RCVTIMEO, optint32, (int32_t) sizeof(int)))
           {
             ret = NET_OK;
           }
@@ -807,7 +844,7 @@ static int32_t net_cellular_setsockopt(int32_t sock, int32_t level, int32_t optn
       case NET_SO_SNDTIMEO:
         if (NULL != optvalue)
         {
-          if (0 == com_setsockopt(sock, COM_SOL_SOCKET, COM_SO_SNDTIMEO, (int32_t *)optvalue, sizeof(int)))
+          if (0 == com_setsockopt(sock, COM_SOL_SOCKET, COM_SO_SNDTIMEO, optint32, (int32_t) sizeof(int)))
           {
             ret = NET_OK;
           }
@@ -825,16 +862,27 @@ static int32_t net_cellular_setsockopt(int32_t sock, int32_t level, int32_t optn
 }
 
 
-static int32_t net_cellular_getsockopt(int32_t sock, int32_t level, int32_t optname, void *optvalue, int32_t *optlen)
+static int32_t net_cellular_getsockopt(int32_t sock, int32_t level, int32_t optname, void *optvalue, uint32_t *optlen)
 {
+  (void) sock;
+  (void) level;
+  (void) optname;
+  (void) optvalue;
+  (void) optlen;
   return NET_ERROR_UNSUPPORTED;
 }
-static int32_t net_cellular_getsockname(int32_t sock, sockaddr_t *name, int32_t *namelen)
+static int32_t net_cellular_getsockname(int32_t sock, net_sockaddr_t *name, uint32_t *namelen)
 {
+  (void) sock;
+  (void) name;
+  (void) namelen;
   return NET_ERROR_UNSUPPORTED;
 }
-static int32_t net_cellular_getpeername(int32_t sock, sockaddr_t *name, int32_t *namelen)
+static int32_t net_cellular_getpeername(int32_t sock, net_sockaddr_t *name, uint32_t *namelen)
 {
+  (void) sock;
+  (void) name;
+  (void) namelen;
   return NET_ERROR_UNSUPPORTED;
 }
 
@@ -850,7 +898,7 @@ static int32_t net_cellular_getpeername(int32_t sock, sockaddr_t *name, int32_t 
 static int32_t net_cellular_close(int32_t sock, bool isaclone)
 {
   int32_t ret;
-
+  (void) isaclone;
   if ((sock < 0) || (sock >= NET_CELLULAR_MAX_CHANNEL_NBR))
   {
     NET_DBG_ERROR("invalid socket");
@@ -888,62 +936,57 @@ static int32_t net_cellular_shutdown(int32_t sock, int32_t mode)
   {
     NET_DBG_INFO("Force local Shutdown on socket %ld\n", sock);
 
-    if (CellularChannel[sock].status &  CELLULAR_CONNECTED_SOCKET)
+    if ((CellularChannel[sock].status & CELLULAR_CONNECTED_SOCKET) != 0U)
     {
       /* reading on the socket is no more possible */
       if (mode == NET_SHUTDOWN_R)
       {
-        CellularChannel[sock].status &=  ~CELLULAR_RECV_OK;
+        CellularChannel[sock].status &= (uint8_t)(~CELLULAR_RECV_OK);
       }
 
       /* writing on the socket is no more possible */
       if (mode == NET_SHUTDOWN_W)
       {
-        CellularChannel[sock].status &=  ~CELLULAR_SEND_OK;
+        CellularChannel[sock].status &= (uint8_t)(~CELLULAR_SEND_OK);
       }
 
       /* reading/writing on the socket is no more possible */
       if (mode == NET_SHUTDOWN_RW)
       {
-        CellularChannel[sock].status &=  ~(CELLULAR_SEND_OK | CELLULAR_RECV_OK);
+        CellularChannel[sock].status &= (uint8_t)(~(CELLULAR_SEND_OK | CELLULAR_RECV_OK));
       }
     }
   }
   return ret;
 }
 
-static int32_t net_cellular_if_gethostbyname(net_if_handle_t *pnetif, sockaddr_t *addr, char_t *name)
+static int32_t net_cellular_if_gethostbyname(net_if_handle_t *pnetif, net_sockaddr_t *addr, char_t *name)
 {
   int32_t ret = NET_ERROR_DNS_FAILURE;
   com_sockaddr_t remoteaddr;
+  (void) pnetif;
 
-  if (addr->sa_len < sizeof(sockaddr_in_t))
+  if (addr->sa_len < sizeof(net_sockaddr_in_t))
   {
-    return NET_ERROR_PARAMETER;
+    ret = NET_ERROR_PARAMETER;
   }
-
-  remoteaddr.sa_len = sizeof(com_sockaddr_t);
-
-  if (COM_SOCKETS_ERR_OK == com_gethostbyname((const com_char_t *)name, &remoteaddr))
+  else
   {
-    if (remoteaddr.sa_family == COM_AF_INET)
-    {
-      com_sockaddr_in_t *sremoteaddr = (com_sockaddr_in_t *) &remoteaddr;
-      uint8_t len = addr->sa_len;
-      sockaddr_in_t *saddr = (sockaddr_in_t *) addr;
+    remoteaddr.sa_len = (uint8_t) sizeof(com_sockaddr_t);
 
-      memset(saddr, 0, len);
-      saddr->sin_len = len;
-      saddr->sin_family = NET_AF_INET;
-      memcpy(&(saddr->sin_addr), &sremoteaddr->sin_addr, 4);
-      ret = NET_OK;
+    if (COM_SOCKETS_ERR_OK == com_gethostbyname((const com_char_t *)name, &remoteaddr))
+    {
+      com2netsockaddr(addr, &remoteaddr, sizeof(net_sockaddr_t));
+      if (remoteaddr.sa_family == (uint8_t) COM_AF_INET)
+      {
+        ret = NET_OK;
+      }
     }
   }
-
   return ret;
 }
 
-static int32_t net_cellular_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int32_t count,
+static int32_t net_cellular_ping(net_if_handle_t *pnetif, net_sockaddr_t *addr, int32_t count,
                                  int32_t delay,
                                  int32_t response[])
 {
@@ -954,44 +997,41 @@ static int32_t net_cellular_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int3
   int32_t  ping_result;
   uint8_t  ping_counter;
 
-  com_sockaddr_in_t ping_target;
+  com_sockaddr_t ping_target;
   com_ping_rsp_t    ping_rsp;
 
-  memcpy(ipaddr, &addr->sa_data[2], 4);
+  (void) pnetif;
+  netsockaddr2com(&ping_target, addr, sizeof(net_sockaddr_t));
+  (void) memcpy(ipaddr, &addr->sa_data[2], 4);
 
-  ping_target.sin_family      = (uint8_t)COM_AF_INET;
-  ping_target.sin_port        = (uint16_t)0U;
-  ping_target.sin_addr.s_addr = NET_ARTON(ipaddr);
-  ping_target.sin_len = (uint8_t)sizeof(com_sockaddr_in_t);
 
   ping_handle = com_ping();
 
   if (ping_handle >= 0)
   {
-    for (ping_counter = 0; ping_counter < count; ping_counter++)
+    for (ping_counter = 0; ping_counter < (uint8_t) count; ping_counter++)
     {
       ping_result = com_ping_process(ping_handle,
-                                     (const com_sockaddr_t *)&ping_target,
-                                     (int32_t)ping_target.sin_len,
-                                     delay, &ping_rsp);
+                                     &ping_target,
+                                     (int32_t)sizeof(com_sockaddr_t),
+                                     (uint8_t) delay, &ping_rsp);
 
       if ((ping_result == COM_SOCKETS_ERR_OK)
           && (ping_rsp.status == COM_SOCKETS_ERR_OK))
       {
-        NET_DBG_INFO("Ping: %d bytes from %d.%d.%d.%d: time= %dms\n\r",
-                     ping_rsp.bytes,
+        NET_DBG_INFO("Ping: from %d.%d.%d.%d: time= %dms\r\n",
                      ipaddr[0],
                      ipaddr[1],
                      ipaddr[2],
                      ipaddr[3],
                      ping_rsp.time);
-        response[ping_counter] = ping_rsp.time;
+        response[ping_counter] = (int32_t) ping_rsp.time;
       }
       else
       {
         if (ping_result == COM_SOCKETS_ERR_TIMEOUT)
         {
-          NET_DBG_INFO("Ping: timeout from %d.%d.%d.%d\n\r",
+          NET_DBG_INFO("Ping: timeout from %d.%d.%d.%d\r\n",
                        ipaddr[0],
                        ipaddr[1],
                        ipaddr[2],
@@ -1000,7 +1040,7 @@ static int32_t net_cellular_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int3
         }
         else
         {
-          NET_DBG_INFO("Ping: error from %d.%d.%d.%d\n\r",
+          NET_DBG_INFO("Ping: error from %d.%d.%d.%d\r\n",
                        ipaddr[0],
                        ipaddr[1],
                        ipaddr[2],
@@ -1040,45 +1080,44 @@ static int32_t net_cellular_get_radio_info(net_cellular_radio_results_t *results
 
 #define ONESECOND       1000
 
-void cellif_input(void const  *argument)
+static void cellif_input(void const  *argument)
 {
+  static dc_cellular_data_info_t  dc_cellular_data_info;
+  static dc_nifman_info_t dc_nifman_info;
+  static dc_sim_info_t dc_sim_info;
+  /*cstat -MISRAC2012-Rule-11.5 -MISRAC2012-Rule-11.8 */
   net_if_handle_t *pnetif = (net_if_handle_t *)argument;
+  /*cstat +MISRAC2012-Rule-11.5 +MISRAC2012-Rule-11.8 */
   osEvent event;
   dc_com_event_id_t dc_event_id;
   bool  registrationMessage = false;
   bool  ModuleMessage = false;
   int32_t   levelMessage = 1;
-  int32_t   tickstart;
-  int32_t   tickcurrent;
+  uint32_t   tickstart;
+  uint32_t   tickcurrent;
   int32_t   connection_iteration = 0;
-
 
   const net_cellular_credentials_t *cellular_data =  pnetif->pdrv->extension.cellular->credentials;
 
-
   tickstart = HAL_GetTick();
+#ifdef NET_CELLULAR_CREDENTIAL_V2
+  cellular_set_config(cellular_data);
+#else
   cellular_set_config(cellular_data->apn,
                       cellular_data->username,
                       cellular_data->password,
                       cellular_data->use_internal_sim);
-
+#endif /* NET_CELLULAR_CREDENTIAL_V2 */
   cellular_start();
+  (void) net_state_manage_event(pnetif, NET_EVENT_INTERFACE_INITIALIZED);
 
   /* Registration for Cellular Data Cache */
-  dc_com_register_gen_event_cb(&dc_com_db, cellular_notif_cb, (void *) NULL);
+  (void) dc_com_register_gen_event_cb(&dc_com_db, cellular_notif_cb, (void *) NULL);
 
 
-  memset((void *)&dc_nifman_info,     0, sizeof(dc_nifman_info_t));
-  memset((void *)&dc_cellular_info,   0, sizeof(dc_cellular_info_t));
-  memset((void *)&dc_sim_info,        0, sizeof(dc_sim_info_t));
-
-
-#if (STACK_ANALYSIS_TRACE == 1)
-  /* check values in task.c tskIDLE_STACK_SIZE */
-  stackAnalysis_addStackSizeByHandle(xTaskGetIdleTaskHandle(), configMINIMAL_STACK_SIZE);
-  /* check values in FreeRTOSConfig.h */
-  stackAnalysis_addStackSizeByHandle(xTimerGetTimerDaemonTaskHandle(), configTIMER_TASK_STACK_DEPTH);
-#endif /* STACK_ANALYSIS_TRACE */
+  (void) memset((void *)&dc_nifman_info,     0, sizeof(dc_nifman_info_t));
+  (void) memset((void *)&dc_cellular_info,   0, sizeof(dc_cellular_info_t));
+  (void) memset((void *)&dc_sim_info,        0, sizeof(dc_sim_info_t));
 
   /* Infinite loop */
   for (;;)
@@ -1087,64 +1126,158 @@ void cellif_input(void const  *argument)
 
     if (event.status == osEventMessage)
     {
+      /*cstat -MISRAC2012-Rule-19.2 union*/
       dc_event_id = (dc_com_event_id_t)event.value.v;
+      /*cstat +MISRAC2012-Rule-19.2 */
       NET_DBG_INFO(" \n\n****> event %d get from cellular_queue\n\n", dc_event_id);
 
       if (dc_event_id == DC_COM_CELLULAR_INFO)
       {
         NET_DBG_INFO("\n***** cellular_info available *****\n");
 
-        dc_com_read(&dc_com_db,
-                    DC_COM_CELLULAR_INFO,
-                    (void *)&dc_cellular_info,
-                    sizeof(dc_cellular_info));
+        (void) dc_com_read(&dc_com_db,
+                           DC_COM_CELLULAR_INFO,
+                           (void *)&dc_cellular_info,
+                           sizeof(dc_cellular_info));
         NET_DBG_INFO("- cellular_info cb -\n");
-        NET_DBG_INFO("   mno_name           = %s\n", dc_cellular_info.mno_name);
-        NET_DBG_INFO("   state              = %d\n", dc_cellular_info.rt_state);
-        NET_DBG_INFO("   modem_state        = %d\n", dc_cellular_info.modem_state);
-        NET_DBG_INFO("   cs_signal_level    = %d\n", (uint8_t)dc_cellular_info.cs_signal_level);
-        NET_DBG_INFO("   cs_signal_level_db = %d\n", (int8_t)dc_cellular_info.cs_signal_level_db);
 
-        NET_DBG_INFO("   imei               = %s\n", (char *)&dc_cellular_info.imei);
-        NET_DBG_INFO("   nmo                = %s\n", (char *)&dc_cellular_info.mno_name);
-        NET_DBG_INFO("   manufacturer_name  = %s\n", (char *)&dc_cellular_info.manufacturer_name);
-        NET_DBG_INFO("   model              = %s\n", (char *)&dc_cellular_info.model);
-        NET_DBG_INFO("   revision           = %s\n", (char *)&dc_cellular_info.revision);
-        NET_DBG_INFO("   serial_number      = %s\n", (char *)&dc_cellular_info.serial_number);
-        NET_DBG_INFO("   iccid              = %s\n", (char *)&dc_cellular_info.iccid);
-        NET_DBG_INFO("--------------------\n");
+        NET_DBG_INFO("   state              = %d\n", dc_cellular_info.rt_state);
+
+        if ((dc_cellular_info.rt_state == DC_SERVICE_RUN) || (dc_cellular_info.rt_state == DC_SERVICE_ON))
+        {
+          NET_DBG_INFO("   modem_state        = %d\n", dc_cellular_info.modem_state);
+          NET_DBG_INFO("   mno_name           = %s\n", dc_cellular_info.mno_name);
+          NET_DBG_INFO("   state              = %d\n", dc_cellular_info.rt_state);
+          NET_DBG_INFO("   modem_state        = %d\n", dc_cellular_info.modem_state);
+          NET_DBG_INFO("   cs_signal_level    = %d\n", (uint8_t)dc_cellular_info.cs_signal_level);
+          NET_DBG_INFO("   cs_signal_level_db = %d\n", (int8_t)dc_cellular_info.cs_signal_level_db);
+          NET_DBG_INFO("   imei               = %s\n", (char_t *)&dc_cellular_info.imei);
+          NET_DBG_INFO("   manufacturer_name  = %s\n", (char_t *)&dc_cellular_info.manufacturer_name);
+          NET_DBG_INFO("   model              = %s\n", (char_t *)&dc_cellular_info.model);
+          NET_DBG_INFO("   revision           = %s\n", (char_t *)&dc_cellular_info.revision);
+          NET_DBG_INFO("   serial_number      = %s\n", (char_t *)&dc_cellular_info.serial_number);
+          NET_DBG_INFO("   iccid              = %s\n", (char_t *)&dc_cellular_info.iccid);
+          NET_DBG_INFO("--------------------\n");
+
+          if (registrationMessage == false)
+          {
+            if (strlen((char_t *)&dc_cellular_info.mno_name) > 0U)
+            {
+              NET_PRINT("\nC2C module registered\n");
+              tickcurrent = HAL_GetTick() - tickstart;
+              NET_PRINT("Registration done in %ld msseconds\n", tickcurrent);
+              NET_PRINT("Retrieving the cellular operator: %s\n",
+                        (char_t *)&dc_cellular_info.mno_name);
+              registrationMessage = true;
+            }
+          }
+
+          if (ModuleMessage == false)
+          {
+            if (strlen((char_t *)&dc_cellular_info.manufacturer_name) > 0U)
+            {
+              NET_PRINT("Module initialized successfully: %s\n",
+                        (char_t *)&dc_cellular_info.manufacturer_name);
+              NET_PRINT("ProductID: %s\n",
+                        (char_t *)&dc_cellular_info.model);
+              NET_PRINT("FW version: %s\n",
+                        (char_t *)&dc_cellular_info.revision);
+              NET_PRINT("SIM Id (IccID): %s\n",
+                        (char_t *)&dc_cellular_info.iccid);
+              ModuleMessage = true;
+
+              /* Retrieve the Cellular module information */
+              (void) strncpy(pnetif->DeviceName, (char_t *)&dc_cellular_info.manufacturer_name,
+                             NET_DEVICE_NAME_LEN);
+              (void) strncpy(pnetif->DeviceID, (char_t *)&dc_cellular_info.model, NET_DEVICE_ID_LEN);
+              (void) strncpy(pnetif->DeviceVer, (char_t *)&dc_cellular_info.revision, NET_DEVICE_VER_LEN);
+
+              /* Initialise the Channels*/
+              for (int32_t i = 0; i < NET_CELLULAR_MAX_CHANNEL_NBR; i++)
+              {
+                CellularChannel[i].status          = CELLULAR_FREE_SOCKET;
+              }
+              (void) net_state_manage_event(pnetif, NET_EVENT_INTERFACE_READY);
+            }
+          }
+        }
+
+        /* Check switch off  */
+        if ((stop_requested) && (dc_cellular_info.rt_state != DC_SERVICE_ON))
+        {
+          NET_DBG_INFO("Modem is powered off\n\n");
+          stop_requested = false;
+          (void) net_state_manage_event(pnetif, NET_EVENT_INTERFACE_INITIALIZED);
+          (void) osThreadTerminate(CellIfThreadId);
+          CellIfThreadId = NULL;
+        }
+
+        if (dc_cellular_info.rt_state == DC_SERVICE_ON)
+        {
+          /* check signal level availability or not, displayed only once */
+          if (levelMessage != dc_cellular_info.cs_signal_level_db)
+          {
+            if (dc_cellular_info.cs_signal_level_db != 0)
+            {
+              NET_PRINT("\nSignal Level: %d dBm \n",
+                        (int8_t)dc_cellular_info.cs_signal_level_db);
+            }
+            else
+            {
+              NET_PRINT("Signal not known or not detectable yet (be patient)\n");
+            }
+            levelMessage = dc_cellular_info.cs_signal_level_db;
+          }
+        }
       }
       else if (dc_event_id == DC_COM_CELLULAR_DATA_INFO)
       {
         NET_DBG_INFO("\n***** cellular_data_info available *****\n");
-        dc_com_read(&dc_com_db,
-                    DC_COM_CELLULAR_DATA_INFO,
-                    (void *)&dc_cellular_data_info,
-                    sizeof(dc_cellular_data_info));
+        (void) dc_com_read(&dc_com_db,
+                           DC_COM_CELLULAR_DATA_INFO,
+                           (void *)&dc_cellular_data_info,
+                           sizeof(dc_cellular_data_info));
         NET_DBG_INFO("- dc_cellular_data_info cb -\n");
         NET_DBG_INFO("   state              = %d\n", dc_cellular_data_info.rt_state);
         NET_DBG_INFO("----------------------------\n");
       }
       else if (dc_event_id == DC_COM_SIM_INFO)
       {
+        /* check SIM availability */
+        (void) dc_com_read(&dc_com_db,
+                           DC_COM_SIM_INFO,
+                           (void *)&dc_sim_info,
+                           sizeof(dc_sim_info));
         NET_DBG_INFO("\n***** sim_info available *****\n");
-        dc_com_read(&dc_com_db,
-                    DC_COM_SIM_INFO,
-                    (void *)&dc_sim_info,
-                    sizeof(dc_sim_info));
-        NET_DBG_INFO("- dc_sim_info cb -\n");
         NET_DBG_INFO("   state              = %d\n", dc_sim_info.rt_state);
-        NET_DBG_INFO("   active_slot        = %d\n", dc_sim_info.active_slot);
-        NET_DBG_INFO("   sim_status         = %d\n", dc_sim_info.sim_status[dc_sim_info.active_slot]);
-        NET_DBG_INFO("------------------\n");
+        if (dc_sim_info.rt_state == DC_SERVICE_ON)
+        {
+          NET_DBG_INFO("- dc_sim_info cb -\n");
+          NET_DBG_INFO("   active_slot        = %d\n", dc_sim_info.active_slot);
+          NET_DBG_INFO("   sim_status         = %d\n", dc_sim_info.sim_status[dc_sim_info.active_slot]);
+          NET_DBG_INFO("------------------\n");
+          if (dc_sim_info.sim_status[dc_sim_info.active_slot] == DC_SIM_NOT_INSERTED)
+          {
+            NET_PRINT("SIM is not inserted\n");
+          }
+        }
       }
       else if (dc_event_id == DC_COM_NIFMAN_INFO)
       {
         NET_DBG_INFO("\n***** nifman_info available *****\n");
-        dc_com_read(&dc_com_db,
-                    DC_COM_NIFMAN_INFO,
-                    (void *)&dc_nifman_info,
-                    sizeof(dc_nifman_info));
+        (void) dc_com_read(&dc_com_db,
+                           DC_COM_NIFMAN_INFO,
+                           (void *)&dc_nifman_info,
+                           sizeof(dc_nifman_info));
+
+        if (connection_requested && (dc_nifman_info.rt_state == DC_SERVICE_ON))
+        {
+          NET_DBG_INFO(" +++++++++++++++++++ Cellular is Data READY +++++++++++++++++++++\n\n");
+          NET_DBG_INFO(" +++++++++++++++++++ IP @ allocated +++++++++++++++++++++\n\n");
+          pnetif->ipaddr.addr = dc_nifman_info.ip_addr.addr;
+          connection_requested = false;
+          (void) net_state_manage_event(pnetif, NET_EVENT_IPADDR);
+        }
         NET_DBG_INFO("- nifman_info cb -\n");
         NET_DBG_INFO("   state              = %d\n", dc_nifman_info.rt_state);
         NET_DBG_INFO("   network            = %d\n", dc_nifman_info.network);
@@ -1154,11 +1287,12 @@ void cellif_input(void const  *argument)
       }
       else if (dc_event_id == DC_COM_PPP_CLIENT_INFO)
       {
+        dc_ppp_client_info_t       dc_ppp_client_info;
         NET_DBG_INFO("\n***** ppp_client_info available *****\n");
-        dc_com_read(&dc_com_db,
-                    DC_COM_PPP_CLIENT_INFO,
-                    (void *)&dc_ppp_client_info,
-                    sizeof(dc_ppp_client_info));
+        (void) dc_com_read(&dc_com_db,
+                           DC_COM_PPP_CLIENT_INFO,
+                           (void *)&dc_ppp_client_info,
+                           sizeof(dc_ppp_client_info));
         NET_DBG_INFO("-- ppp_client_info cb --\n");
         NET_DBG_INFO("   state              = %d\n", dc_ppp_client_info.rt_state);
         NET_DBG_INFO("   IP@                = %lu\n", dc_ppp_client_info.ip_addr.addr);
@@ -1171,125 +1305,15 @@ void cellif_input(void const  *argument)
       }
     }
 
-
-
-    /* check SIM availability   */
-    if (dc_sim_info.rt_state == DC_SERVICE_ON)
+    if ((registrationMessage == false) || (ModuleMessage == false))
     {
-      if (dc_sim_info.sim_status[dc_sim_info.active_slot] == DC_SIM_NOT_INSERTED)
+      NET_PRINT_WO_CR(".");
+      connection_iteration++;
+      if ((connection_iteration % 60) == 0)
       {
-        NET_PRINT("SIM is not inserted\n");
+        NET_PRINT(" ");
       }
     }
-
-    /* check signal level availability or not, displayed only once */
-
-    if (levelMessage != dc_cellular_info.cs_signal_level_db)
-    {
-      if (dc_cellular_info.cs_signal_level_db != 0)
-      {
-        NET_PRINT("\nSignal Level: %d dBm \n",
-                  (int8_t)dc_cellular_info.cs_signal_level_db);
-      }
-      else
-      {
-        NET_PRINT("Signal not known or not detectable yet (be patient)\n");
-      }
-      levelMessage = dc_cellular_info.cs_signal_level_db;
-    }
-    /* scroll right (waiting for registration) */
-    else
-    {
-      if (registrationMessage == false)
-      {
-        NET_PRINT_WO_CR(".");
-        connection_iteration++;
-        if ((connection_iteration % 60) == 0)
-        {
-          NET_PRINT(" ");
-        }
-      }
-    }
-
-
-    /* Check Registration is performed, displayed only once */
-    if (dc_cellular_info.rt_state == DC_SERVICE_ON)
-    {
-      if (registrationMessage == false)
-      {
-        if (strlen((char *)&dc_cellular_info.mno_name) > 0)
-        {
-          NET_PRINT("\nC2C module registered\n");
-          tickcurrent = HAL_GetTick() - tickstart;
-          NET_PRINT("Registration done in %ld msseconds\n", tickcurrent);
-          NET_PRINT("Retrieving the cellular operator: %s\n",
-                    (char *)&dc_cellular_info.mno_name);
-          registrationMessage = true;
-        }
-      }
-    }
-
-    /* Check modem manufacturer and model         */
-    /*   and other cellular information, display only once  */
-    if (dc_cellular_info.rt_state == DC_SERVICE_ON)
-    {
-      if (ModuleMessage == false)
-      {
-        if (strlen((char *)&dc_cellular_info.manufacturer_name) > 0)
-        {
-          NET_PRINT("Module initialized successfully: %s\n",
-                    (char *)&dc_cellular_info.manufacturer_name);
-          NET_PRINT("ProductID: %s\n",
-                    (char *)&dc_cellular_info.model);
-          NET_PRINT("FW version: %s\n",
-                    (char *)&dc_cellular_info.revision);
-          NET_PRINT("SIM Id (IccID): %s\n",
-                    (char *)&dc_cellular_info.iccid);
-          ModuleMessage = true;
-
-          /* Retrieve the Cellular module information */
-          strncpy(pnetif->DeviceName, (char *)&dc_cellular_info.manufacturer_name, NET_DEVICE_NAME_LEN);
-          strncpy(pnetif->DeviceID, (char *)&dc_cellular_info.model, NET_DEVICE_ID_LEN);
-          strncpy(pnetif->DeviceVer, (char *)&dc_cellular_info.revision, NET_DEVICE_VER_LEN);
-
-          /* Initialise the Channels*/
-          for (int32_t i = 0; i < NET_CELLULAR_MAX_CHANNEL_NBR; i++)
-          {
-            CellularChannel[i].status          = CELLULAR_FREE_SOCKET;
-          }
-          net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_STARTED, NULL);
-        }
-      }
-    }
-
-    /* check connectivity is ready, displayed only once */
-    if (connection_requested && ((dc_cellular_data_info.rt_state == DC_SERVICE_ON)
-                                 || (dc_cellular_data_info.rt_state == DC_SERVICE_RUN)))
-    {
-      NET_DBG_INFO(" +++++++++++++++++++ Cellular is Data READY +++++++++++++++++++++\n\n");
-      if (dc_nifman_info.rt_state == DC_SERVICE_ON)
-      {
-        NET_DBG_INFO(" +++++++++++++++++++ IP @ allocated +++++++++++++++++++++\n\n");
-        pnetif->ipaddr = dc_nifman_info.ip_addr.addr;
-        connection_requested = false;
-        net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_CONNECTED, NULL);
-      }
-    }
-
-    /* Check switch off */
-    if ((stop_requested) && (dc_cellular_info.rt_state != DC_SERVICE_ON))
-    {
-      NET_DBG_INFO("Modem is powered off\n\n");
-      stop_requested = false;
-      net_if_notify(pnetif, NET_EVENT_STATE_CHANGE, NET_STATE_STOPPED, NULL);
-      osThreadTerminate(CellIfThreadId);
-      CellIfThreadId = NULL;
-    }
-
-#if (STACK_ANALYSIS_TRACE == 1)
-    NET_DBG_INFO("\n STACK ANALYSIS ...\n");
-    stackAnalysis_trace(stackAnalysis_true);
-#endif /* STACK_ANALYSIS_TRACE */
   }
 }
 
@@ -1304,15 +1328,46 @@ void cellif_input(void const  *argument)
   *         - true for the external slot with a dynamic APN
   *         - false with the embedded SIM with a static APN
   */
-static void cellular_set_config(const char *oper_ap_code,
-                                const char *username,
-                                const char *password,
+#ifdef NET_CELLULAR_CREDENTIAL_V2
+static void cellular_set_config(const net_cellular_credentials_t *credentials)
+{
+  dc_cellular_params_t cellular_params;
+  uint8_t i;
+
+  (void) memset((void *)&cellular_params,     0, sizeof(dc_cellular_params_t));
+  (void) dc_com_read(&dc_com_db, DC_COM_CELLULAR_PARAM, (void *)&cellular_params, sizeof(cellular_params));
+
+  cellular_params.sim_slot_nb = credentials->sim_socket_nb;
+  cellular_params.target_state = DC_TARGET_STATE_SIM_ONLY;
+  for (i = 0; i < NET_CELLULAR_MAX_SUPPORTED_SLOT ; i++)
+  {
+    cellular_params.sim_slot[i].sim_slot_type = credentials->sim_slot[i].sim_slot_type;
+    cellular_params.sim_slot[i].cid           = credentials->sim_slot[i].cid ;
+
+    (void)strcpy((char_t *)cellular_params.sim_slot[i].apn, (const char_t *)credentials->sim_slot[i].apn);
+    (void)strcpy((char_t *)cellular_params.sim_slot[i].username, credentials->sim_slot[i].username);
+    (void)strcpy((char_t *)cellular_params.sim_slot[i].password, credentials->sim_slot[i].password);
+  }
+  /* Initialize all other fields */
+  cellular_params.set_pdn_mode = 1U;
+  cellular_params.target_state = DC_TARGET_STATE_SIM_ONLY;
+  cellular_params.nfmc_active  = 0U;
+#ifdef CELLULAR_VERSION_FIRMWARE_VERSION
+  cellular_params.attachment_timeout  = CELLULAR_ATTACHMENT_TIMEOUT;
+#endif /* CELLULAR_VERSION_FIRMWARE_VERSION */
+
+  (void) dc_com_write(&dc_com_db, DC_COM_CELLULAR_PARAM, (void *)&cellular_params, sizeof(cellular_params));
+}
+#else
+static void cellular_set_config(const char_t *oper_ap_code,
+                                const char_t *username,
+                                const char_t *password,
                                 bool use_internal_sim)
 {
   dc_cellular_params_t cellular_params;
 
-  memset((void *)&cellular_params,     0, sizeof(dc_cellular_params_t));
-  dc_com_read(&dc_com_db, DC_COM_CELLULAR_PARAM, (void *)&cellular_params, sizeof(cellular_params));
+  (void) memset((void *)&cellular_params,     0, sizeof(dc_cellular_params_t));
+  (void) dc_com_read(&dc_com_db, DC_COM_CELLULAR_PARAM, (void *)&cellular_params, sizeof(cellular_params));
 
 
 
@@ -1323,7 +1378,7 @@ static void cellular_set_config(const char *oper_ap_code,
     cellular_params.sim_slot_nb = 1;
 
     /* Specify operator credencials : Access Point Number, username and password */
-    memcpy(cellular_params.sim_slot[0].apn, "EM", (size_t)sizeof("EM"));
+    (void) memcpy(cellular_params.sim_slot[0].apn, "EM", (size_t)sizeof("EM"));
 
     /* Specify the Context ID */
     cellular_params.sim_slot[0].cid          = CS_PDN_USER_CONFIG_1;
@@ -1338,11 +1393,11 @@ static void cellular_set_config(const char *oper_ap_code,
     cellular_params.sim_slot_nb = 2;
 
     /* Specify operator credencials : Access Point Number, username and password */
-    memcpy(cellular_params.sim_slot[0].apn, oper_ap_code, strlen(oper_ap_code)+1);
-    memcpy(cellular_params.sim_slot[0].username, username, strlen(username)+1);
-    memcpy(cellular_params.sim_slot[0].password, password, strlen(password)+1);
+    (void) memcpy(cellular_params.sim_slot[0].apn, oper_ap_code, strlen(oper_ap_code) + 1U);
+    (void) memcpy(cellular_params.sim_slot[0].username, username, strlen(username) + 1U);
+    (void) memcpy(cellular_params.sim_slot[0].password, password, strlen(password) + 1U);
 
-    memcpy(cellular_params.sim_slot[1].apn, "EM", (size_t)sizeof("EM"));
+    (void) memcpy(cellular_params.sim_slot[1].apn, "EM", (size_t)sizeof("EM"));
 
 
     /* Specify the Context ID */
@@ -1354,14 +1409,21 @@ static void cellular_set_config(const char *oper_ap_code,
 
   /* Initialize all other fields */
   cellular_params.set_pdn_mode = 1U;
-  cellular_params.target_state = DC_TARGET_STATE_FULL;
+  cellular_params.target_state = DC_TARGET_STATE_SIM_ONLY;
   cellular_params.nfmc_active  = 0U;
+#ifdef CELLULAR_VERSION_FIRMWARE_VERSION
+  cellular_params.attachment_timeout  = CELLULAR_ATTACHMENT_TIMEOUT;
+#endif /* CELLULAR_VERSION_FIRMWARE_VERSION */
 
-  dc_com_write(&dc_com_db, DC_COM_CELLULAR_PARAM, (void *)&cellular_params, sizeof(cellular_params));
+  (void) dc_com_write(&dc_com_db, DC_COM_CELLULAR_PARAM, (void *)&cellular_params, sizeof(cellular_params));
 }
+
+#endif /* NET_CELLULAR_CREDENTIAL_V2 */
+
 
 static void cellular_notif_cb(dc_com_event_id_t dc_event_id, const void *private_gui_data)
 {
+  (void) private_gui_data;
   if ((dc_event_id == DC_COM_CELLULAR_INFO) ||
 #if (USE_SOCKETS_TYPE == USE_SOCKETS_LWIP)
       (dc_event_id == DC_COM_PPP_CLIENT_INFO) ||
@@ -1371,7 +1433,7 @@ static void cellular_notif_cb(dc_com_event_id_t dc_event_id, const void *private
       (dc_event_id == DC_COM_SIM_INFO))
   {
     NET_DBG_INFO(" \n\n****> event %d put in cellular_queue\n\n", dc_event_id);
-    while (osMessagePut(cellular_queue, (uint32_t)dc_event_id, osWaitForever) != osOK);
+    while (osMessagePut(cellular_queue, (uint32_t)dc_event_id, OSWAITFOREVER) != osOK) {};
   }
 }
 

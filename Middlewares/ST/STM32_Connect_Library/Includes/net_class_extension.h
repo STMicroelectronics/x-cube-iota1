@@ -27,13 +27,22 @@ extern "C" {
 
 typedef struct net_if_wifi_class_extension_s
 {
-  int32_t (*scan)(net_wifi_scan_mode_t mode);
-  int32_t (*get_scan_results)(net_wifi_scan_results_t *results, uint8_t number);
+  int32_t (*scan)(net_if_handle_t *pnetif, net_wifi_scan_mode_t mode, char *ssid);
+  int32_t (*get_scan_results)(net_if_handle_t *pnetif, net_wifi_scan_results_t *results, uint8_t number);
   int32_t (*set_credentials)(const net_wifi_credentials_t *cred);
   int32_t (*get_system_info)(const net_wifi_system_info_t info, void *data);
   int32_t (*set_param)(const net_wifi_param_t info, void *data);
+  int32_t (*switch_mode)(net_if_handle_t *pnetif, net_wifi_mode_t target_mode);
   const          net_wifi_credentials_t *credentials;
+  net_wifi_mode_t       mode;
+  /* Access Point parameter */
+  uint8_t               access_channel;
+  uint8_t               max_connections;
+  bool                AP_hidden;
+
   const          net_wifi_powersave_t *powersave;
+  void           *ifp; /* Interface STA or AP handler */
+  net_wifi_ap_ie_t      *information_element;
 } net_if_wifi_class_extension_t;
 
 

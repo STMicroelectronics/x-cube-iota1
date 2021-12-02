@@ -7,9 +7,29 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup CORE_UTILS Core Utils
+ * @{
+ */
+
+/** @defgroup BECH32 Bech32
+ * @{
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup BECH32_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief bech32 encode
@@ -55,8 +75,28 @@ int iota_addr_bech32_encode(char *output, const char *hrp, const uint8_t *addr, 
  */
 int iota_addr_bech32_decode(uint8_t *addr_data, size_t *addr_len, const char *hrp, const char *addr_str);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

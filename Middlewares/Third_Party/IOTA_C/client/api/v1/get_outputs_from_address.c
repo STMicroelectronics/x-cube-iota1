@@ -1,12 +1,12 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-#include "get_outputs_from_address.h"
-#include "json_utils.h"
-#include "http_lib.h"
-#include "iota_str.h"
+#include "client/api/json_utils.h"
+#include "client/api/v1/get_outputs_from_address.h"
+#include "client/network/http_lib.h"
+#include "core/utils/iota_str.h"
 
-static get_outputs_address_t *outputs_new() {
+static get_outputs_address_t *outputs_new(void) {
   get_outputs_address_t *ids = malloc(sizeof(get_outputs_address_t));
   if (ids) {
     memset(ids->address, 0, sizeof(ids->address));
@@ -31,6 +31,7 @@ res_outputs_address_t *res_outputs_address_new() {
   res_outputs_address_t *res = malloc(sizeof(res_outputs_address_t));
   if (res) {
     res->is_error = false;
+    res->u.output_ids = NULL;
     return res;
   }
   return NULL;
@@ -41,7 +42,9 @@ void res_outputs_address_free(res_outputs_address_t *res) {
     if (res->is_error) {
       res_err_free(res->u.error);
     } else {
-      outputs_free(res->u.output_ids);
+      if (res->u.output_ids) {
+        outputs_free(res->u.output_ids);
+      }
     }
     free(res);
   }
@@ -67,6 +70,11 @@ size_t res_outputs_address_output_id_count(res_outputs_address_t *res) {
 }
 int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *res) {
   int ret = -1;
+  if (j_str == NULL || res == NULL) {
+    printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
+    return -1;
+  }
+
   cJSON *json_obj = cJSON_Parse(j_str);
   if (json_obj == NULL) {
     return -1;
@@ -89,24 +97,29 @@ int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *r
         printf("[%s:%d]: allocate output object failed\n", __func__, __LINE__);
         goto end;
       }
-      
-      if ((ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_ids->address, sizeof(res->u.output_ids->address))) != 0) {
+      ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_ids->address, sizeof(res->u.output_ids->address));
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR);
         goto end;
       }
-      
-      if ((ret = json_get_uint32(data_obj, JSON_KEY_MAX_RESULTS, &res->u.output_ids->max_results) != 0)) {
+      ret = json_get_uint32(data_obj, JSON_KEY_MAX_RESULTS, &res->u.output_ids->max_results);
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_MAX_RESULTS);
         goto end;
       }
-      
-      if ((ret = json_get_uint32(data_obj, JSON_KEY_COUNT, &res->u.output_ids->count) != 0)) {
+      ret = json_get_uint32(data_obj, JSON_KEY_COUNT, &res->u.output_ids->count);
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_COUNT);
         goto end;
       }
-      
-      if ((ret = json_string_array_to_utarray(data_obj, JSON_KEY_OUTPUT_IDS, res->u.output_ids->outputs)) != 0) {
+      ret = json_string_array_to_utarray(data_obj, JSON_KEY_OUTPUT_IDS, res->u.output_ids->outputs);
+      if (ret != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_OUTPUT_IDS);
+        goto end;
+      }
+      ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output_ids->ledger_idx);
+      if (ret != 0) {
+        printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);
         goto end;
       }
       
@@ -122,52 +135,66 @@ end:
   return ret;
 }
 
-int get_outputs_from_address(iota_client_conf_t const *conf, char const addr[], res_outputs_address_t *res) {
+int get_outputs_from_address(iota_client_conf_t const *conf, bool is_bech32, char const addr[], res_outputs_address_t *res) {
   int ret = -1;
+  http_context_t http_ctx;
   http_response_t http_res;
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
+  memset(&http_res, 0, sizeof(http_response_t));
 
   if (conf == NULL || addr == NULL || res == NULL) {
     // invalid parameters
     return -1;
   }
 
-  // compose restful api command
-  iota_str_t *cmd = iota_str_new(conf->url);
-  if (cmd == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
+  size_t addr_len = strlen(addr);
+  if (addr_len != IOTA_ADDRESS_HEX_BYTES) {
+    printf("[%s:%d] incorrect length of the address\n", __func__, __LINE__);
     return -1;
   }
 
-  char cmd_buf[128];
-  memset(cmd_buf, 0, sizeof(cmd_buf));
-  sprintf(cmd_buf, "api/v1/addresses/ed25519/%s/outputs", addr);
-  if (iota_str_append(cmd, cmd_buf)) {
-    printf("[%s:%d]: cmd append failed\n", __func__, __LINE__);
+  // compose restful api command
+  char cmd_buffer[99] = {0};  // 99 = max size of api path(34) + IOTA_ADDRESS_HEX_BYTES(64) + 1
+  int snprintf_ret;
+
+  if (is_bech32) {
+    snprintf_ret = snprintf(cmd_buffer, sizeof(cmd_buffer), "/api/v1/addresses/%s/outputs", addr);
+  } else {
+    snprintf_ret = snprintf(cmd_buffer, sizeof(cmd_buffer), "/api/v1/addresses/ed25519/%s/outputs", addr);
+  }
+
+  // check if data stored is not more than buffer length
+  if (snprintf_ret > (sizeof(cmd_buffer) - 1)) {
+    printf("[%s:%d]: http cmd buffer overflow\n", __func__, __LINE__);
     goto done;
   }
 
-  // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
+  // allocate response
   http_res.body = byte_buf_new();
   if (http_res.body == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    ret = -1;
+    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
     goto done;
   }
   http_res.code = 0;
 
-  // send request via http client
-  if ( http_read(http_handle,
-                 &http_res,
-                 "Content-Type: application/json",
-                 NULL) < 0 ) {
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd_buffer;
+  http_ctx.use_tls = conf->use_tls;
+  http_ctx.port = conf->port;
 
+  // http open
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
+    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+    goto done;
+  }
+
+  // send request via http client
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  NULL);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
   } else {
     byte_buf2str(http_res.body);
@@ -176,7 +203,7 @@ int get_outputs_from_address(iota_client_conf_t const *conf, char const addr[], 
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
@@ -184,7 +211,6 @@ int get_outputs_from_address(iota_client_conf_t const *conf, char const addr[], 
 
 done:
   // cleanup command
-  iota_str_destroy(cmd);
   byte_buf_free(http_res.body);
   return ret;
 }

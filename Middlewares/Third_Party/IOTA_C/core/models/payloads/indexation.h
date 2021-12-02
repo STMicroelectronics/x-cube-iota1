@@ -6,27 +6,67 @@
 
 #include <stdint.h>
 
-#include "types.h"
-#include "byte_buffer.h"
+#include "core/types.h"
+#include "core/utils/byte_buffer.h"
+
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup PAYLOADS Payloads
+ * @{
+ */
+
+/** @defgroup INDEXATION Indexation
+ * @{
+ */
+
+/** @defgroup INDEXATION_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
 
 #define MAX_INDEXCATION_INDEX_BYTES 64
 
-// the payload type of indexation is 2
+/**
+ * @}
+ */
+
+/** @defgroup INDEXATION_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
+/**
+ * @brief Indexation data structure
+ *
+ * The payload type of indexation is 2
+ */
 typedef struct {
-  byte_buf_t *index;  // The index key of the message
-  byte_buf_t *data;   // Data we are attaching
+  byte_buf_t *index;  ///< The index key of the message
+  byte_buf_t *data;   ///< Data we are attaching
 } indexation_t;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup INDEXATION_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate indexation payload
  *
  * @return indexation_t*
  */
-indexation_t *indexation_new();
+indexation_t *indexation_new(void);
 
 /**
  * @brief Free an indexation payload
@@ -51,7 +91,7 @@ indexation_t *indexation_create(char const *index, byte_t data[], uint32_t data_
  * @param[in] idx An indexation payload object
  * @return size_t The expect size of serialied data
  */
-size_t indexaction_serialize_length(indexation_t *idx);
+size_t indexation_serialize_length(indexation_t *idx);
 
 /**
  * @brief Serialize an indexation payload
@@ -62,8 +102,28 @@ size_t indexaction_serialize_length(indexation_t *idx);
  */
 size_t indexation_payload_serialize(indexation_t *idx, byte_t buf[]);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

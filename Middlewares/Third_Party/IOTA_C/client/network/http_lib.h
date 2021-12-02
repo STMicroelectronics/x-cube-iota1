@@ -1,53 +1,26 @@
 /**
   ******************************************************************************
-  * @file    http_util.h
-  * @author  MCD Application Team
-  * @brief   Helper functions for building HTTP GET and POST requests, and 
-  *          stream reading.
-  *          Header for http_util.c
+  * @file   http_lib.h
+  * @author SRA/Central LAB
+  * @brief  Helper functions for building HTTP GET and POST requests, and
+  *         stream reading.
+  *         Header for http_lib.c
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright (c) 2019-2021 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under SLA0055, the "License";
+  * You may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at www.st.com
   *
   ******************************************************************************
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef HTTP_UTIL_H
-#define HTTP_UTIL_H
+#ifndef HTTP_LIB_H
+#define HTTP_LIB_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -58,44 +31,57 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "byte_buffer.h"
+#include "core/utils/byte_buffer.h"
 
-/** @addtogroup PROJECTS
- * @{
- */
- 
-/** @addtogroup APPLICATIONS
- * @{
- */
+#include "http.h"
 
-/** @addtogroup IOTA_LightNode
+/** @defgroup IOTA_C IOTA_C
  * @{
  */
 
-/** @defgroup HTTP_UTIL HTTP Utilities
+/** @defgroup CLIENT Client
  * @{
  */
 
-/** @defgroup HTTP_UTIL_EXPORTED_FUNCTIONS Exported Constants
+/** @defgroup NETWORK Network
+ * @{
+ */
+
+/** @defgroup NETWORK_EXPORTED_CONSTANTS Exported Constants
  * @{
  */
 
 /* Exported constants --------------------------------------------------------*/
 #define HTTP_OK                0
 #define HTTP_ERR               -1
-#define HTTP_ERR_HTTP          -2  /**< HTTP error */
-#define HTTP_ERR_CLOSED        -3  /**< The HTTP connection was closed by the server. */
+#define HTTP_ERR_OPEN          -2  /**< HTTP OPEN error */
+#define HTTP_ERR_CONNECT       -3  /**< HTTP CONNECT error */
+#define HTTP_ERR_SEND          -4  /**< HTTP SEND error */
+#define HTTP_ERR_RECV          -5  /**< HTTP RECV error */
+#define HTTP_ERR_PARSE         -6  /**< HTTP PARSE error */
+#define HTTP_ERR_CLOSED        -7  /**< The HTTP connection was closed by the server. */
 
 /**
  * @}
  */
 
-/** @defgroup HTTP_UTIL_EXPORTED_TYPES Exported Types
+/** @defgroup NETWORK_EXPORTED_TYPES Exported Types
  * @{
  */
 
 /* Exported types ------------------------------------------------------------*/
-typedef void * http_handle_t;
+/**
+ * @brief HTTP progressive download internal session context.
+ */
+typedef struct {
+  int32_t sock;                 /**< Network socket handle. */
+  char const* host;             /**< Domain name or IP as string */
+  char const* path;             /**< HTTP path */
+  char const* query;            /**< HTTP query */
+  uint16_t port;                /**< port to connect */
+  bool use_tls;                 /**< Use TLS or not */
+  bool connection_is_open;      /**< HTTP keep-alive connection status. */
+} http_context_t;
 
 typedef enum {
   HTTP_PROTO_NONE = 0,
@@ -113,40 +99,24 @@ typedef struct
  * @}
  */
 
-/** @defgroup HTTP_UTIL_EXPORTED_TYPES Exported Functions
+/** @defgroup NETWORK_EXPORTED_FUNCTIONS Exported Functions
  * @{
  */
 
 /* Exported functions --------------------------------------------------------*/
-int http_open(http_handle_t * const pHnd, const char *url);
-int http_close(const http_handle_t hnd);
-bool http_is_open(const http_handle_t hnd);
+int http_open(http_context_t * const pCtx);
+int http_close(http_context_t * const pCtx);
 
-int http_read(const http_handle_t hnd,
+int http_read(http_context_t * const pCtx,
               http_response_t* response,
               const char * const extra_headers,
               byte_buf_t* const post_buffer);
 
-int http_url_parse(char * const host,
-                   const int host_max_len,
-                   int * const port,
-                   bool * tls,
-                   char * const query,
-                   const int query_max_len,
-                   const char * url);
-
-int http_req_create(char ** const req_buf,
-                    const char * const query,
+int http_req_create(char *req_buf,
+                    const char * const path,
                     const char * const hostname,
                     const char * const extra_headers,
                     byte_buf_t* const post_buffer);
-
-void http_req_destroy(const char *req_buf);
-
-
-/**
- * @}
- */
 
 /**
  * @}
@@ -168,7 +138,7 @@ void http_req_destroy(const char *req_buf);
 }
 #endif
 
-#endif /* HTTP_UTIL_H */
+#endif /* HTTP_LIB_H */
 
 /**
   * @}

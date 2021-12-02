@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define IOTA_ENDPOINT_MAX_LEN 256
 
@@ -14,8 +15,9 @@
  *
  */
 typedef struct {
-  char url[IOTA_ENDPOINT_MAX_LEN];  ///< The URL string of the endpoint
-  uint16_t port;                    ///< The port number of the endpoint
+  char host[IOTA_ENDPOINT_MAX_LEN];  ///< domain name or IP as string
+  uint16_t port;                     ///< port to connect
+  bool use_tls;                      ///< Use TLS or not
 } iota_client_conf_t;
 
 #ifdef __cplusplus
