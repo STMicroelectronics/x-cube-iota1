@@ -7,11 +7,31 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "message.h"
-#include "response_error.h"
-#include "client_service.h"
-#include "models_message.h"
-#include "types.h"
+#include "client/api/message.h"
+#include "client/api/v1/response_error.h"
+#include "client/client_service.h"
+#include "core/models/models_message.h"
+#include "core/types.h"
+
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup SEND_MESSAGE Send Message
+ * @{
+ */
+
+/** @defgroup SEND_MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 /**
  * @brief The response of send message
@@ -20,14 +40,22 @@
 typedef struct {
   bool is_error;  ///< True if got an error from the node.
   union {
-    res_err_t* error;                       ///< Error message if is_error is True
-    char msg_id[API_MSG_ID_HEX_BYTES + 1];  ///< a message IDs string if is_error is False
+    res_err_t* error;                            ///< Error message if is_error is True
+    char msg_id[IOTA_MESSAGE_ID_HEX_BYTES + 1];  ///< a message IDs string if is_error is False
   } u;
 } res_send_message_t;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup SEND_MESSAGE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Deserialize the response of send_message
@@ -79,8 +107,28 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
  */
 int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg, res_send_message_t* res);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

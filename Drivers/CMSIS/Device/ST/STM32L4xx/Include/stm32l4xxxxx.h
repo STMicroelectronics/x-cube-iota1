@@ -2624,8 +2624,10 @@ typedef struct
 #if defined (STM32L4P5xx) || defined (STM32L4Q5xx) || defined (STM32L4R7xx) || defined (STM32L4R9xx) || defined (STM32L4S7xx) || defined (STM32L4S9xx)
 #define LTDC                ((LTDC_TypeDef *)LTDC_BASE)
 #define LTDC_Layer1         ((LTDC_Layer_TypeDef *)LTDC_Layer1_BASE)
-#define LTDC_Layer2         ((LTDC_Layer_TypeDef *)LTDC_Layer2_BASE)
 #endif /*  STM32L4P5xx || STM32L4Q5xx || STM32L4R7xx || STM32L4R9xx || STM32L4S7xx || STM32L4S9xx */
+#if defined (STM32L4R7xx) || defined (STM32L4R9xx) || defined (STM32L4S7xx) || defined (STM32L4S9xx)
+#define LTDC_Layer2         ((LTDC_Layer_TypeDef *)LTDC_Layer2_BASE)
+#endif /* STM32L4R7xx || STM32L4R9xx || STM32L4S7xx || STM32L4S9xx */
 #if defined (STM32L4R9xx) || defined (STM32L4S9xx)
 #define DSI                 ((DSI_TypeDef *)DSI_BASE)
 #endif /* STM32L4R9xx || STM32L4S9xx */
@@ -7591,7 +7593,6 @@ typedef struct
 #define CRS_CR_TRIM_4             (0x10UL << CRS_CR_TRIM_Pos)                  /*!< 0x00001000 */
 #define CRS_CR_TRIM_5             (0x20UL << CRS_CR_TRIM_Pos)                  /*!< 0x00002000 */
 #endif
-#define CRS_CR_TRIM               CRS_CR_TRIM_Msk                              /*!< HSI48 oscillator smooth trimming */
 
 /*******************  Bit definition for CRS_CFGR register  *********************/
 #define CRS_CFGR_RELOAD_Pos       (0U)
@@ -18034,7 +18035,7 @@ typedef struct
 #define RCC_ICSCR_HSICAL_7                   (0x80UL << RCC_ICSCR_HSICAL_Pos)  /*!< 0x00800000 */
 
 /*!< HSITRIM configuration */
-#if defined (STM32L471xx) || defined (STM32L475xx) || defined (STM32L476xx) || defined (STM32L485xx) || defined (STM32L486xx)
+#if defined (STM32L431xx) || defined (STM32L432xx) || defined (STM32L433xx) || defined (STM32L442xx) || defined (STM32L443xx) || defined (STM32L471xx) || defined (STM32L475xx) || defined (STM32L476xx) || defined (STM32L485xx) || defined (STM32L486xx)
 #define RCC_ICSCR_HSITRIM_Pos                (24U)
 #define RCC_ICSCR_HSITRIM_Msk                (0x1FUL << RCC_ICSCR_HSITRIM_Pos) /*!< 0x1F000000 */
 #define RCC_ICSCR_HSITRIM                    RCC_ICSCR_HSITRIM_Msk             /*!< HSITRIM[4:0] bits */
@@ -18054,7 +18055,7 @@ typedef struct
 #define RCC_ICSCR_HSITRIM_4                  (0x10UL << RCC_ICSCR_HSITRIM_Pos) /*!< 0x10000000 */
 #define RCC_ICSCR_HSITRIM_5                  (0x20UL << RCC_ICSCR_HSITRIM_Pos) /*!< 0x20000000 */
 #define RCC_ICSCR_HSITRIM_6                  (0x40UL << RCC_ICSCR_HSITRIM_Pos) /*!< 0x40000000 */
-#endif /* STM32L471xx || STM32L475xx || STM32L476xx || STM32L485xx || STM32L486xx*/
+#endif /* STM32L431xx || STM32L432xx || STM32L433xx || STM32L442xx || STM32L443xx || STM32L486xx || STM32L471xx || STM32L475xx || STM32L476xx || STM32L485xx || STM32L486xx*/
 
 /********************  Bit definition for RCC_CFGR register  ******************/
 /*!< SW configuration */

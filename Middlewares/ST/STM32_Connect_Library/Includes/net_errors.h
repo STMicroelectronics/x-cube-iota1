@@ -54,12 +54,15 @@ extern "C" {
 #define NET_ERROR_FRAMEWORK                 -25  /*!< should never happen */
 #define NET_ERROR_STATE_TRANSITION          -26  /*!< should never happen */
 #define NET_ERROR_INVALID_STATE_TRANSITION  -27  /*!< should never happen */
-#define NET_ERROR_GENERIC                   -28  /*!< generic error */
+#define NET_ERROR_INVALID_STATE             -28  /*!< should never happen */
+#define NET_ERROR_GENERIC                   -29  /*!< generic error */
+#define NET_ERROR_MODULE_INITIALIZATION     -30  /*!< module is not able to initialized  */
+#define NET_ERROR_WIFI_CANT_JOIN            -31  /*!< wifi module is not able to join  */
 
 
 
 #define NET_ERROR_MBEDTLS_ENTROPY       -100/*!<mbedtls enthropy setup failed */
-#define NET_ERROR_MBEDTLS_CRT_PARSE     -101/*!<mbedtls parsing certificat failed */
+#define NET_ERROR_MBEDTLS_CRT_PARSE     -101/*!<mbedtls parsing certificate failed */
 #define NET_ERROR_MBEDTLS_KEY_PARSE     -102/*!<mbedtls parsing key failed */
 #define NET_ERROR_MBEDTLS_SET_HOSTNAME  -103/*!<mbedtls cannot setup hostname*/
 #define NET_ERROR_MBEDTLS_SEED          -104/*!<mbedtls seed setup failed */

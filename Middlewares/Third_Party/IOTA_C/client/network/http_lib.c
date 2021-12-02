@@ -1,45 +1,18 @@
 /**
   ******************************************************************************
-  * @file    http_util.c
-  * @author  MCD Application Team
-  * @brief   Helper functions for building HTTP GET and POST requests, and 
-  *          stream reading.
+  * @file   http_lib.c
+  * @author SRA/Central LAB
+  * @brief  Helper functions for building HTTP GET and POST requests, and
+  *         stream reading.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright (c) 2019-2021 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under SLA0055, the "License";
+  * You may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at www.st.com
   *
   ******************************************************************************
   */
@@ -49,38 +22,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "http.h"
 #include "http_lib.h"
 #include "main.h"
-//#include "iota_conf.h"
 #include "msg.h"
 #include "net_connect.h"
 
 /* Private defines -----------------------------------------------------------*/
-#define HTTP_MAX_HOST_SIZE        80      /**< Max length of the http server hostname. */
-#define HTTP_MAX_QUERY_SIZE       500      /**< Max length of the http query string. */
-#define HTTP_READ_BUFFER_SIZE     1024    /**< Size of the HTTP receive buffer.
-                                               Must be larger than the HTTP response header length. That is about 300-800 bytes. */
-#define HTTP_HEADER               "HTTP/1.1"
+#define REPORT_TIMEPERIOD_MS    10000
 
-#define MIN(a,b)        ( ((a)<(b)) ? (a) : (b) )
+#define HTTP_READ_BUFFER_SIZE   1024    /**< Size of the HTTP receive buffer. */
+#define HTTP_HEADER             "HTTP/1.1"
 
 /* Private typedef -----------------------------------------------------------*/
-/** 
- * @brief HTTP progressive download internal session context. 
- */
-typedef struct {
-  int32_t sock;                       /**< Network socket handle. */
-  char query[HTTP_MAX_QUERY_SIZE];    /**< HTTP query parsed from the URL. Must be resent in each range request. */
-  char hostname[HTTP_MAX_HOST_SIZE];  /**< HTTP full qualified server name. Must be resent in each range request. */
-  int port;
-  bool connection_is_open;            /**< HTTP keep-alive connection status. */
-} http_context_t;
-
 
 /* Private variables ----------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
-static int http_connect(http_context_t *http_context);
+static int http_connect(http_context_t *http_context, sockaddr_in_t *addr);
 
 /* Functions Definition ------------------------------------------------------*/
 
@@ -89,24 +46,24 @@ static int http_connect(http_context_t *http_context);
  * @note    The request buffer is allocated by the callee and must be released 
  *          by calling http_req_destroy() after usage.
  * @param   Out:  req_buf         Output buffer, allocated by the callee.
- * @param   In:   query           HTTP query string.
- * @param   In:   hostname        Remote hostname.
+ * @param   In:   path            HTTP path string.
+ * @param   In:   host        Remote host.
  * @param   In:   extra_headers   HTTP headers to be appended to the request header. Single buffer. Each line must be ended by \r\n.
  * @param   In:   post_buffer     The document body to be sent, in case of a POST request. Must be NULL for a GET request.
  * @retval  Error code
  *            >0              Success, length of the request string written to req_buf.
  *            HTTP_ERR (<0)   Failure
  */
-int http_req_create(char ** const req_buf,
-                    const char * const query,
-                    const char * const hostname,
+int http_req_create(char *req_buf,
+                    const char * const path,
+                    const char * const host,
                     const char * const extra_headers,
                     byte_buf_t* const post_buffer)
 {
   int rc = HTTP_OK;
     
-  size_t req_buf_len = strlen(query) + strlen(hostname);
-  msg_http_debug("After query+hostname -- req_buf_len = %d\n", req_buf_len);
+  size_t req_buf_len = strlen(path) + strlen(host);
+  msg_http_debug("After path+host -- req_buf_len = %d\n", req_buf_len);
   req_buf_len += (extra_headers == NULL) ? 0 : strlen(extra_headers);
   msg_http_debug("After extra_headers -- req_buf_len = %d\n", req_buf_len);
   if (post_buffer == NULL)
@@ -120,79 +77,44 @@ int http_req_create(char ** const req_buf,
     req_buf_len += 48 + post_buffer->len/10 +100; /* Overall fixed-size length of the request string .*/
     msg_http_debug("After Overall fixed-size length -- req_buf_len = %d (post_buffer->len=%d)\n", req_buf_len, post_buffer->len);
   }
-  
-  *req_buf = malloc(req_buf_len);
-  if (req_buf == NULL)
+
+  if (post_buffer == NULL)
   {
-    rc = HTTP_ERR;
+    /* HTTP GET request */
+    rc = snprintf(req_buf, req_buf_len,
+                  "GET %s %s\r\n"
+                  "Host: %s\r\n"
+                  "%s\r\n\r\n",
+                  path, HTTP_HEADER, host, (extra_headers == NULL) ? "" : extra_headers);
   }
   else
   {
-    if (post_buffer == NULL)
-    {
-      /* HTTP GET request */
-      rc = snprintf(*req_buf, req_buf_len,
-        "GET /%s %s\r\n"
-        "Host: %s\r\n"
-        "%s\r\n\r\n",
-        query, HTTP_HEADER, hostname, (extra_headers == NULL) ? "" : extra_headers);
-    }
-    else
-    {
-      /* HTTP POST request */
-      rc = snprintf(*req_buf, req_buf_len,
-        "POST /%s %s\r\n"
-        "Host: %s\r\n"
-        "Content-Length: %d\r\n"
-        "%s\r\n\r\n",
-        query, HTTP_HEADER, hostname, post_buffer->len, (extra_headers == NULL) ? "" : extra_headers);
-    }
-    if (rc >= req_buf_len)
-    {
-      msg_http_error("Memory overflow preparing the HTTP request string. %d >= %d\n", rc, req_buf_len);
-      rc = HTTP_ERR; /* The allocated destination buffer is too small. */
-      free(*req_buf);
-    }
+    /* HTTP POST request */
+    rc = snprintf(req_buf, req_buf_len,
+                  "POST %s %s\r\n"
+                  "Host: %s\r\n"
+                  "Content-Length: %d\r\n"
+                  "%s\r\n\r\n",
+                  path, HTTP_HEADER, host, post_buffer->len, (extra_headers == NULL) ? "" : extra_headers);
   }
-  
+  if (rc >= req_buf_len)
+  {
+    msg_http_error("Memory overflow preparing the HTTP request string. %d >= %d\n", rc, req_buf_len);
+    rc = HTTP_ERR; /* The allocated destination buffer is too small. */
+  }
+
   return rc; /* Return the string length, or a <0 error code. */
 }
 
-
-/**
- * @brief   Destroy an HTTP request string created by http_req_create();
- * @param   In:   req_buf         Buffer to be freed.
- */
-void http_req_destroy(const char *req_buf)
+static int http_connect(http_context_t *pCtx, sockaddr_in_t *addr)
 {
-  free((void*)req_buf);
-}
-
-static int http_connect(http_context_t *http_context)
-{
-  http_context_t * pCtx = http_context;
   int ret = 0;
 
-  if (!pCtx)
-  {
-    msg_error("error invalid handle");
-    return HTTP_ERR;
-  }
-
-  sockaddr_in_t addr;
-  addr.sin_len = sizeof(sockaddr_in_t);
-  if (net_if_gethostbyname(NULL,(sockaddr_t *)&addr, (char_t*) pCtx->hostname) < 0)
-  {
-    msg_error("Could not find hostname ipaddr %s\n", pCtx->hostname);
-    return -1;
-  }
-
-  addr.sin_port = NET_HTONS(pCtx->port);
-  ret = net_connect( pCtx->sock,  (sockaddr_t *)&addr, sizeof( addr ) );
+  ret = net_connect( pCtx->sock, (sockaddr_t *)addr, sizeof( sockaddr_in_t ) );
 
   if (NET_OK != ret)
   {
-    msg_error("Could not open a socket.\n");
+    msg_http_error("Could not connect socket #%ld.\n", pCtx->sock);
   }
   else
   {
@@ -200,88 +122,94 @@ static int http_connect(http_context_t *http_context)
     return HTTP_OK;
   }
 
-  return HTTP_ERR;
+  return HTTP_ERR_CONNECT;
 }
 
 /**
  * @brief   Open an HTTP progressive download session.
  * @note    The internal session context is allocated by the callee.
- * @param   In: pHnd    Pointer on the session handle.
- * @param   In: url     Source of the progressive download. e.g. http://john.doe:80/foo.bar
+ * @param   In: pCtx    Pointer to the session context.
  * @retval  Error code
- *            HTTP_OK   (0)  Success
- *            HTTP_ERR (<0)  Failure
+ *            HTTP_OK        (0)  Success
+ *            HTTP_ERR_OPEN (<0)  Failure
  */
-int http_open(http_handle_t * const pHnd, const char *url)
+int http_open(http_context_t * const pCtx)
 {
-  http_context_t * pCtx = 0;
   int ret = 0;
-
-  pCtx = (http_context_t *) malloc(sizeof(http_context_t));
 
   if (pCtx != NULL)
   {
     pCtx->connection_is_open = false;
-    bool tls = false;
-    if (HTTP_OK == http_url_parse(pCtx->hostname, HTTP_MAX_HOST_SIZE, &pCtx->port, &tls, pCtx->query, HTTP_MAX_QUERY_SIZE, url))
+
+    sockaddr_in_t addr;
+    addr.sin_len = sizeof(sockaddr_in_t);
+    if (net_if_gethostbyname(NULL,(sockaddr_t *)&addr, (char_t*) pCtx->host) < 0)
     {
-      pCtx->sock = net_socket(NET_AF_INET, NET_SOCK_STREAM, NET_IPPROTO_TCP);
-      if (pCtx->sock < 0)
+      msg_http_error("Could not find host ipaddr (%s)\n", pCtx->host);
+      return HTTP_ERR_OPEN;
+    }
+    addr.sin_port = NET_HTONS(pCtx->port);
+
+    pCtx->sock = net_socket(NET_AF_INET, NET_SOCK_STREAM, NET_IPPROTO_TCP);
+    if (pCtx->sock < 0)
+    {
+      msg_http_error("Could not create a socket.\n");
+      return HTTP_ERR_OPEN;
+    }
+    else
+    {
+      //msg_http_debug("Socket #%d allocated.\n", pCtx->sock);
+      msg_http_debug("http_open pCtx->host=%s\n", pCtx->host);
+      if (pCtx->use_tls == true)
       {
-        msg_http_error("Could not create a socket.\n");
-      }
-      else
-      {
-        msg_http_debug("http_open   pCtx->hostname=%s\n", pCtx->hostname);
-        if (tls == true)
-        {
-          ret  = net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_SECURE, NULL, 0);
-          ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_CA_CERT, (void *)lUserConfigPtr->tls_root_ca_cert, strlen(lUserConfigPtr->tls_root_ca_cert) + 1);
-          ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_SERVER_NAME, (void *)pCtx->hostname, strlen(pCtx->hostname) + 1);
-//          ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_SERVER_VERIFICATION, (void *) &true_val, sizeof(bool));
-        }
-      }
-      
-      if (NET_OK != ret)
-      {
-        msg_http_error("Could not set the socket options (ret=%d).\n", ret);
-      }
-      else
-      {
-        ret = http_connect(pCtx);
-      }
-      
-      if (NET_OK != ret)
-      {
-        msg_http_error("Could not open a socket.\n");
-      }
-      else
-      {
-        *pHnd = (http_handle_t) pCtx;
-        pCtx->connection_is_open = true;
-        return HTTP_OK;
+#define NET_READ_TIMEOUT 30000
+        uint32_t timeout = NET_READ_TIMEOUT;
+        bool false_val = false;
+        //bool true_val = true;
+        ret  = net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_SECURE, NULL, 0);
+        ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_RCVTIMEO, (void *) &timeout, sizeof(uint32_t));
+        ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_CA_CERT, (void *)lUserConfigPtr->tls_root_ca_cert, strlen(lUserConfigPtr->tls_root_ca_cert) + 1);
+        ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_SERVER_NAME, (void *)pCtx->host, strlen(pCtx->host) + 1);
+        //ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_SERVER_VERIFICATION, (void *) &true_val, sizeof(bool));
+        ret |= net_setsockopt(pCtx->sock, NET_SOL_SOCKET, NET_SO_TLS_SERVER_VERIFICATION, (void *) &false_val, sizeof(bool));
       }
     }
 
-    free(pCtx);
-  }
-  return HTTP_ERR;
-}
+    if (NET_OK != ret)
+    {
+      msg_http_error("Could not set the socket options (ret=%d).\n", ret);
+    }
+    else
+    {
+      ret = http_connect(pCtx, &addr);
+    }
 
+    if (NET_OK != ret)
+    {
+      msg_http_error("Could not open HTTP session due to previous error...\n");
+    }
+    else
+    {
+      //msg_http_debug("Socket #%d opened.\n", pCtx->sock);
+      return HTTP_OK;
+    }
+
+  }
+  return HTTP_ERR_OPEN;
+}
 
 /**
  * @brief   Close an HTTP progressive download session.
  * @note    The internal session context is freed by the callee.
- * @param   In: hnd   Session handle.
+ * @param   In: pCtx   Session handle.
  * @retval  Error code
  *            HTTP_OK   (0)  Success
  *            HTTP_ERR (<0)  Failure
  */
-int http_close(const http_handle_t hnd)
+int http_close(http_context_t * const pCtx)
 {
   int rc = HTTP_ERR;
 
-  http_context_t * pCtx = (http_context_t *) hnd;
   if (pCtx != NULL)
   {
     int ret = 0;
@@ -290,124 +218,16 @@ int http_close(const http_handle_t hnd)
 
     if (ret == NET_OK)
     {
+      //msg_http_debug("Socket #%d closed.\n", pCtx->sock);
       rc = HTTP_OK;
-      free(pCtx);
     }
     else
     {
-      msg_http_error("Could not close and destroy a socket.\n");
+      msg_http_error("Could not close and destroy the socket #%ld.\n", pCtx->sock);
     }
   }
 
   return rc;
-}
-
-/**
- * @brief   Tells whether an HTTP progressive download session is still open, or has been closed by the server.
- * @param   In: hnd   Session handle.
- * @retval  true:   The session is open.
- *          false:  The session is closed: the handle should be freed by calling http_close().
- */
-bool http_is_open(const http_handle_t hnd)
-{
-  http_context_t * pCtx = (http_context_t *) hnd;
-  return pCtx->connection_is_open;
-}
-
-
-/**
- * @brief   Parse and split an http url into hostname/port number/query string.
- * @param   Out: host           Hostname. Allocated by the caller.
- * @param   In:  host_max_len   Maximum length of the hostname.
- * @param   Out: proto          Application protocol (HTTP or HTTPS).
- * @param   Out: port           Port number.
- * @param   Out: query          HTTP query. Allocated by the caller.
- * @param   Out: tls            This is an HTTPS URL.
- * @param   In:  query_max_len  Maximum length of the query.
- * @param   In:  url            URL to be parsed.
- * @retval  Error code
- *            HTTP_OK   (0)  Success
- *            HTTP_ERR (<0)  Failure
- */
-int http_url_parse(char * const host, const int host_max_len, int * const port, bool * tls, char * const query, const int query_max_len, const char * url)
-{
-  bool has_query = true;
-  const char * pc = NULL;
-
-#ifdef URL_TRACE
-  msg_http_debug("url: %s\n", url);
-#endif
-
-  memset(host, 0, host_max_len);
-  memset(query, 0, query_max_len);
-
-#define HT_PX  "http://"
-#define HTS_PX  "https://"
-  
-  if (0 == strncmp(url, HTS_PX, strlen(HTS_PX)))
-  {
-    *tls = true;
-    pc = url + strlen(HTS_PX);
-  }
-  
-  if (0 == strncmp(url, HT_PX, strlen(HT_PX)))
-  {
-    *tls = false;
-    pc = url + strlen(HT_PX);
-  }
-  
-  if ( pc != NULL )
-  {
-    char *pHostTailCol = strchr(pc, ':');
-    char *pHostTailSla = strchr(pc, '/');
-    if ((pHostTailCol <= pHostTailSla) && (pHostTailCol != NULL))
-    {
-      /*host = */strncpy(host, pc, MIN(pHostTailCol - pc, host_max_len));
-      pc = pHostTailCol + 1;
-      sscanf(pc, "%d", port);
-      pc = strchr(pc, '/');
-      if (pc != NULL)
-      {
-        pc++;
-      } else
-      {
-        has_query = false;
-      }
-    } else
-    {
-      if (pHostTailSla != NULL)
-      {
-        strncpy(host, pc, MIN(pHostTailSla - pc, host_max_len));
-        pc = pHostTailSla + 1;
-      } else
-      {
-        /*host = */strncpy(host, pc, host_max_len);
-        has_query = false;
-      }
-      *port = (*tls) ? 443 : 80;
-    }
-    if (has_query)
-    {
-      /*query = */strncpy(query, pc, query_max_len);
-    }
-
-#ifdef URL_TRACE
-    msg_http_debug("http host: %s\n", host);
-    msg_http_debug("http port: %d\n", *port);
-    msg_http_debug("http query: %s\n", query);
-#endif
-
-    return HTTP_OK;
-  } else
-  {
-    /* Not an HTTP url. */
-    return HTTP_ERR;
-  }
-}
-
-static void* response_realloc(void* opaque, void* ptr, int size)
-{
-  return realloc(ptr, size);
 }
 
 static void response_body(void* opaque, const char* data, int size)
@@ -430,7 +250,6 @@ static void response_code(void* opaque, int code)
 }
 
 static http_funcs_t responseFuncs = {
-  response_realloc,
   response_body,
   response_header,
   response_code
@@ -439,7 +258,7 @@ static http_funcs_t responseFuncs = {
 
 /**
  * @brief   Read from an HTTP progressive download session.
- * @param   In: hnd             Session handle.
+ * @param   In: pCtx            Session handle.
  * @param   Out: response       Output response.
  * @param   In: extra_headers   String containing additional HTTP headers to send. Each line must end with \r\n. "" for no header at all.
  * @param   In: postbuffer      The POST payload
@@ -447,18 +266,20 @@ static http_funcs_t responseFuncs = {
  *                HTTP_OK
  *           <0 Error:
  *                HTTP_ERR            Bad input parameter. Or allocation error.
- *                HTTP_ERR_HTTP       Connection error, or unexpected response from the HTTP server.
  *                HTTP_ERR_CLOSED     The connection was closed by the server during the previous http_read(). It is allowed by the protocol.
+ *                HTTP_ERR_SEND       Error sending request.
+ *                HTTP_ERR_RECV       Error receiving response.
+ *                HTTP_ERR_PARSE      Error parsing response.
  */
-int http_read(const http_handle_t hnd,
+int http_read(http_context_t * const pCtx,
               http_response_t* response,
               const char * const extra_headers,
               byte_buf_t* const post_buffer)
 {
   int rc = HTTP_OK;
   int send_bytes = 0;
-  char *req_buf = NULL;
-  http_context_t * pCtx = (http_context_t *) hnd;
+  char req_buf[512];
+  memset(req_buf, 0, sizeof(req_buf));
 
   if (pCtx == NULL)
   {
@@ -475,7 +296,7 @@ int http_read(const http_handle_t hnd,
   
   if (rc == HTTP_OK)
   {
-    send_bytes = http_req_create(&req_buf, pCtx->query, pCtx->hostname, extra_headers, post_buffer);
+    send_bytes = http_req_create(req_buf, pCtx->path, pCtx->host, extra_headers, post_buffer);
     if (send_bytes < 0)
     {
       rc = HTTP_ERR;
@@ -486,12 +307,12 @@ int http_read(const http_handle_t hnd,
   {
     /* Send the HTTP headers. */
     rc = net_send(pCtx->sock, (uint8_t *) req_buf, send_bytes, 0);
-    printf("Request: \n%s\n", req_buf);
+    msg_http_debug("Request (len=%d): \n%s\n", strlen(req_buf), req_buf);
     msg_http_debug("Send the HTTP headers -- rc/send_bytes (%d/%d).\n", rc, send_bytes);
     if (rc != send_bytes)
     {
       msg_http_error("Header send failed (%d/%d).\n", rc, send_bytes);
-      rc = HTTP_ERR_HTTP;
+      rc = HTTP_ERR_SEND;
     }
     else
     {
@@ -499,23 +320,33 @@ int http_read(const http_handle_t hnd,
       /* Send the POST body if applicable. */
       if (post_buffer != NULL)
       {
-        rc = net_send(pCtx->sock, post_buffer->data, post_buffer->len, 0);
-        msg_http_debug("Send the POST body -- post_buffer (%s) rc/post_buffer->len (%d/%d).\n", post_buffer->data, rc, post_buffer->len);
-        if (rc != post_buffer->len)
+        int offset = 0;
+        int size_left = post_buffer->len;
+        while(offset < post_buffer->len)
         {
-          msg_http_error("POST body send failed (%d/%d).\n", rc, post_buffer->len);
-          rc = HTTP_ERR_HTTP;
-        }
-        else
-        {
+          rc = net_send(pCtx->sock, post_buffer->data+offset, size_left, 0);
+          if (rc < 0)
+          {
+            msg_http_error("POST body send failed (%d/%d).\n", rc, post_buffer->len);
+            rc = HTTP_ERR_SEND;
+            break;
+          }
+          offset += rc;
+          size_left -= rc;
+
           rc = HTTP_OK;
         }
       }
-      
+
       /* Get and parse the server response. */
       msg_http_debug("After sending POST body rc (%d).\n", rc);
+#ifdef NET_PERF
+      uint32_t elapsed_time;
+      uint32_t start_time;
+      start_time = NET_TICK();
+#endif /* NET_PERF */
       if (rc == HTTP_OK)
-      {  
+      {
         http_roundtripper_t rt;
         http_parser_init(&rt, responseFuncs, response);
 
@@ -524,10 +355,10 @@ int http_read(const http_handle_t hnd,
         while (needmore) {
           const char* data = (char *)buffer;
           int ndata = net_recv(pCtx->sock, buffer, sizeof(buffer), 0);
-          if (ndata <= 0) {
-            msg_http_error("Error receiving data\n");
-            http_parser_free(&rt);
-            return HTTP_ERR_HTTP;
+          if (ndata < 0) {
+            msg_http_error("Error receiving data (ret=%d)\n", ndata);
+            http_parser_reset(&rt);
+            return HTTP_ERR_RECV;
           }
 
           while (needmore && ndata) {
@@ -540,18 +371,22 @@ int http_read(const http_handle_t hnd,
 
         if (http_parser_iserror(&rt)) {
           msg_http_error("Error parsing data\n");
-          http_parser_free(&rt);
-          return HTTP_ERR_HTTP;
+          http_parser_reset(&rt);
+          return HTTP_ERR_PARSE;
         }
 
-        http_parser_free(&rt);
+        http_parser_reset(&rt);
       }
+#ifdef NET_PERF
+      elapsed_time = NET_TICK() - start_time;
+      msg_http_debug("Duration recv response %d ms \n", elapsed_time);
+#endif /* NET_PERF */
     }
   }
 
   msg_http_debug("Response: %d\n", response->code);
   if (response->body->data) {
-    msg_http_debug("%.*s\n", response->body->len, response->body->data);
+    msg_http_debug("response->body->len=%d\n%.*s\n", response->body->len, response->body->len, response->body->data);
   }
   return rc;
 }

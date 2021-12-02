@@ -16,27 +16,31 @@
   *
   ******************************************************************************
   */
-
 #include "net_connect.h"
 #include "net_internals.h"
-
 static void netif_add_to_list(net_if_handle_t *pnetif);
 static void netif_remove_from_list(net_if_handle_t *pnetif);
-static net_if_handle_t *netif_list = NULL;
+static net_if_handle_t *net_if_list = NULL;
+
+#ifndef __IO
+/*cstat -MISRAC2012-Rule-21.1 */
+#define __IO volatile
+/*cstat +MISRAC2012-Rule-21.1 */
+#endif /* IO */
 
 
 static void netif_add_to_list(net_if_handle_t *pnetif)
 {
   LOCK_NETIF_LIST();
-  if (netif_list == NULL)
+  if (net_if_list == NULL)
   {
-    netif_list = pnetif;
+    net_if_list = pnetif;
   }
   else
   {
     /*add it to end of the list*/
     net_if_handle_t *plastnetif;
-    plastnetif = netif_list;
+    plastnetif = net_if_list;
     while (plastnetif->next != NULL)
     {
       plastnetif = plastnetif->next;
@@ -52,13 +56,13 @@ static void netif_remove_from_list(net_if_handle_t *pnetif)
   net_if_handle_t       *pnetif_prev;
   LOCK_NETIF_LIST();
 
-  if (netif_list == pnetif)
+  if (net_if_list == pnetif)
   {
-    netif_list = netif_list->next;
+    net_if_list = net_if_list->next;
   }
   else
   {
-    for (pnetif_prev = netif_list; pnetif_prev->next != NULL; pnetif_prev = pnetif_prev->next)
+    for (pnetif_prev = net_if_list; pnetif_prev->next != NULL; pnetif_prev = pnetif_prev->next)
     {
       if (pnetif_prev->next == pnetif)
       {
@@ -77,19 +81,31 @@ static void netif_remove_from_list(net_if_handle_t *pnetif)
   * @param  Params
   * @retval socket status
   */
-net_if_handle_t *net_if_find(ipaddr_t  addr)
+net_if_handle_t *net_if_find(net_sockaddr_t *addr)
 {
   net_if_handle_t *ptr;
+  net_ip_addr_t ipaddr;
+  net_ip_addr_t ipaddr_zero;
 
+  NET_ZERO(ipaddr_zero);
+  NET_ZERO(ipaddr);
+  if (addr != NULL)
+  {
+    ipaddr = net_get_ip_addr(addr);
+
+  }
   LOCK_NETIF_LIST();
 
-  ptr = netif_list;
-
-  if (addr != 0U)
+  ptr = net_if_list;
+  /*cstat -MISRAC2012-Rule-21.16 */
+  if (NET_DIFF(ipaddr, ipaddr_zero) != 0)
+    /*cstat +MISRAC2012-Rule-21.16 */
   {
     do
     {
-      if (ptr->ipaddr == addr)
+      /*cstat -MISRAC2012-Rule-21.16 */
+      if (NET_EQUAL(ptr->ipaddr, ipaddr))
+        /*cstat +MISRAC2012-Rule-21.16 */
       {
         break;
       }
@@ -101,12 +117,13 @@ net_if_handle_t *net_if_find(ipaddr_t  addr)
 }
 
 
-net_if_handle_t *netif_check(net_if_handle_t *pnetif)
+net_if_handle_t *netif_check(net_if_handle_t *pnetif_in)
 {
+  net_if_handle_t *pnetif = pnetif_in;
   if (pnetif == NULL)
   {
     /* get default interface*/
-    pnetif = net_if_find(0);
+    pnetif = net_if_find(NULL);
     if (pnetif == NULL)
     {
       NET_DBG_ERROR("No network interface defined");
@@ -115,32 +132,35 @@ net_if_handle_t *netif_check(net_if_handle_t *pnetif)
   return pnetif;
 }
 
-static bool check_state_transition(net_state_t to, net_state_t from)
-{
-
-  /* FIXME later when state are properly defined */
-
-  return true;
-}
 
 
 
 /**
-  * @brief  Wait for state transtion
+  * @brief  Wait for state transition
   * @param  pnetif a pointer to the selected network interface
   * @param  state  the expected state
   * @param  timeout max time to wait in ms for the transition
   * @retval 0 in case of success, an error code otherwise
   */
+extern uint32_t HAL_GetTick(void);
+
 int32_t net_if_wait_state(net_if_handle_t *pnetif, net_state_t state, uint32_t timeout)
 {
-  volatile net_state_t      *p;
+  int32_t  ret = NET_OK;
+  __IO net_state_t      *p;
   p = &pnetif->state;
+
+  uint32_t start_time = HAL_GetTick();
   while (*p != state)
   {
-    WAIT_STATE_CHANGE(timeout);
+    if (HAL_GetTick() >= (start_time + timeout))
+    {
+      ret = NET_TIMEOUT;
+      break;
+    }
+    WAIT_STATE_CHANGE(timeout - (HAL_GetTick() - start_time));
   }
-  return NET_OK;
+  return ret;
 
 }
 
@@ -154,26 +174,14 @@ void net_if_notify(net_if_handle_t *pnetif, net_evt_t event_class, uint32_t even
   {
     pnetif->event_handler->callback(pnetif->event_handler->context, event_class, event_id, event_data);
   }
-
-  switch (event_class)
-  {
-    case NET_EVENT_STATE_CHANGE:
-      pnetif->state = (net_state_t)(uint32_t) event_id;
-      SIGNAL_STATE_CHANGE();
-      break;
-
-    default:
-      break;
-  }
-
-
 }
+
 
 #ifdef NET_USE_RTOS
 static int32_t net_initialized = 0;
 #endif /* NET_USE_RTOS */
 
-/** @defgroup State State Management Connectivity Framework
+/** @defgroup State State Management Network Framework
   * Application uses this set of function to control the network interface state.
   * Normal state flow is init => start => connect.
   * Socket interface can be used when connected state is reached.Network interface is connected and got an IP address.
@@ -189,14 +197,15 @@ static int32_t net_initialized = 0;
   * @brief  Perform network interface initialization
   * @param  pnetif a pointer to an allocated network interface structure
   * @param  driver_init a pointer to a function which define the driver to use
-  * @param  event_handler  a calback function to manage event from connectivity framework
+  * @param  event_handler  a callback function to manage event from network framework
   * @retval 0 in case of success, an error code otherwise
    * This function is a synchronous function.
   */
-int32_t net_if_init(net_if_handle_t *pnetif, net_if_driver_init_func driver_init,
+int32_t net_if_init(net_if_handle_t *pnetif_in, net_if_driver_init_func driver_init,
                     const net_event_handler_t *event_handler)
 {
   int32_t ret;
+  net_if_handle_t *pnetif = pnetif_in;
 #ifdef NET_USE_RTOS
   if (net_initialized == 0)
   {
@@ -204,7 +213,7 @@ int32_t net_if_init(net_if_handle_t *pnetif, net_if_driver_init_func driver_init
     net_initialized = 1;
   }
 #endif /* NET_USE_RTOS */
-  pnetif = netif_check(pnetif);
+
   if (pnetif != NULL)
   {
     pnetif->event_handler = event_handler;
@@ -213,8 +222,11 @@ int32_t net_if_init(net_if_handle_t *pnetif, net_if_driver_init_func driver_init
     ret = (*driver_init)(pnetif);
     if (NET_OK != ret)
     {
+      pnetif->state = NET_STATE_DEINITIALIZED;
+      netif_remove_from_list(pnetif);
+
       NET_DBG_ERROR("Interface cannot be initialized.");
-      return NET_ERROR_INTERFACE_FAILURE;
+      ret = NET_ERROR_INTERFACE_FAILURE;
     }
   }
   else
@@ -222,6 +234,15 @@ int32_t net_if_init(net_if_handle_t *pnetif, net_if_driver_init_func driver_init
     NET_DBG_ERROR("Invalid interface.");
     ret = NET_ERROR_PARAMETER;
   }
+
+#ifdef NET_USE_RTOS
+  if (NET_OK != ret)
+  {
+    net_destroy_locks();
+    net_initialized = 0;
+  }
+#endif /* NET_USE_RTOS */
+
   return ret;
 }
 
@@ -233,34 +254,21 @@ int32_t net_if_init(net_if_handle_t *pnetif, net_if_driver_init_func driver_init
 int32_t net_if_deinit(net_if_handle_t *pnetif)
 {
   int32_t ret;
+  ret = net_state_manage_event(pnetif, NET_EVENT_CMD_DEINIT);
+  pnetif->state = NET_STATE_DEINITIALIZED;
+  if (ret == NET_OK)
+  {
+    netif_remove_from_list(pnetif);
+  }
 
-  pnetif = netif_check(pnetif);
-  if (pnetif != NULL)
+#ifdef NET_USE_RTOS
+  if (net_initialized == 1)
   {
-    if (check_state_transition(pnetif->state, NET_STATE_DEINITIALIZED))
-    {
-      ret = pnetif->pdrv->if_deinit(pnetif);
-      if (ret != NET_OK)
-      {
-        NET_DBG_ERROR("Interface cannot be de-initialized");
-        ret = NET_ERROR_STATE_TRANSITION;
-      }
-      else
-      {
-        netif_remove_from_list(pnetif);
-      }
-    }
-    else
-    {
-      NET_DBG_ERROR("Incorrect requested State transition");
-      ret = NET_ERROR_INVALID_STATE_TRANSITION;
-    }
+    net_destroy_locks();
+    net_initialized = 0;
   }
-  else
-  {
-    NET_DBG_ERROR("Invalid interface.");
-    ret = NET_ERROR_PARAMETER;
-  }
+#endif /* NET_USE_RTOS */
+
   return ret;
 }
 
@@ -272,32 +280,7 @@ int32_t net_if_deinit(net_if_handle_t *pnetif)
   */
 int32_t net_if_start(net_if_handle_t *pnetif)
 {
-  int32_t ret;
-
-  pnetif = netif_check(pnetif);
-  if (pnetif != NULL)
-  {
-    if (check_state_transition(pnetif->state, NET_STATE_INITIALIZED))
-    {
-      ret = pnetif->pdrv->if_start(pnetif);
-      if (NET_OK != ret)
-      {
-        NET_DBG_ERROR("Interface cannot be started.");
-        return NET_ERROR_INTERFACE_FAILURE;
-      }
-    }
-    else
-    {
-      NET_DBG_ERROR("Incorrect requested State transition");
-      ret = NET_ERROR_INVALID_STATE_TRANSITION;
-    }
-  }
-  else
-  {
-    NET_DBG_ERROR("Invalid interface.");
-    ret = NET_ERROR_PARAMETER;
-  }
-  return ret;
+  return net_state_manage_event(pnetif, NET_EVENT_CMD_START);
 }
 
 /**
@@ -307,17 +290,35 @@ int32_t net_if_start(net_if_handle_t *pnetif)
   */
 int32_t net_if_stop(net_if_handle_t *pnetif)
 {
-  int32_t ret;
+  return net_state_manage_event(pnetif, NET_EVENT_CMD_STOP);
+}
 
-  pnetif = netif_check(pnetif);
+/**
+
+  * @brief  Yield data from network interface
+  * @param  pnetif a pointer to an allocated network interface structure
+  * @retval 0 in case of success, an error code otherwise
+  */
+int32_t net_if_yield(net_if_handle_t *pnetif_in, uint32_t timeout)
+{
+  int32_t ret = NET_OK;
+  net_if_handle_t *pnetif;
+  net_state_t state;
+
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
-    if (check_state_transition(pnetif->state, NET_STATE_STARTED))
+    (void) net_if_getState(pnetif, &state);
+
+    if (state == NET_STATE_CONNECTED)
     {
-      ret = pnetif->pdrv->if_stop(pnetif);
+      if (NULL != pnetif->pdrv->if_yield)
+      {
+        ret = pnetif->pdrv->if_yield(pnetif, timeout);
+      }
       if (ret != NET_OK)
       {
-        NET_DBG_ERROR("Interface cannot be stopped");
+        NET_DBG_ERROR("Interface yield failed!!!");
         ret = NET_ERROR_STATE_TRANSITION;
       }
     }
@@ -343,32 +344,7 @@ int32_t net_if_stop(net_if_handle_t *pnetif)
   */
 int32_t net_if_connect(net_if_handle_t *pnetif)
 {
-  int32_t ret;
-
-  pnetif = netif_check(pnetif);
-  if (pnetif != NULL)
-  {
-    if (check_state_transition(pnetif->state, NET_STATE_CONNECTED))
-    {
-      ret = pnetif->pdrv->if_connect(pnetif);
-      if (ret != NET_OK)
-      {
-        NET_DBG_ERROR("Interface cannot be connected");
-        ret = NET_ERROR_STATE_TRANSITION;
-      }
-    }
-    else
-    {
-      NET_DBG_ERROR("Incorrect requested State transition");
-      ret = NET_ERROR_INVALID_STATE_TRANSITION;
-    }
-  }
-  else
-  {
-    NET_DBG_ERROR("Invalid interface.");
-    ret = NET_ERROR_PARAMETER;
-  }
-  return ret;
+  return net_state_manage_event(pnetif, NET_EVENT_CMD_CONNECT);
 }
 
 /**
@@ -379,28 +355,28 @@ int32_t net_if_connect(net_if_handle_t *pnetif)
   */
 int32_t net_if_disconnect(net_if_handle_t *pnetif)
 {
-  int32_t ret;
+  return net_state_manage_event(pnetif, NET_EVENT_CMD_DISCONNECT);
+}
 
-  pnetif = netif_check(pnetif);
-  if (pnetif != NULL)
+/**
+  * @brief  send a direct ascii command to network interface
+  * @param  cmd  a pointer to an allocated string for the command
+  * @param  resp  a pointer to an allocated string for the response
+  * @retval 0 in case of success, an error code otherwise
+  */
+int32_t net_if_atcmd(net_if_handle_t *pnetif_in, char_t *cmd, char_t *resp)
+{
+  int32_t ret = NET_ERROR_FRAMEWORK;
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
+  if ((pnetif != NULL) && (pnetif->pdrv->if_atcmd != NULL))
   {
-    if (check_state_transition(pnetif->state, NET_STATE_DISCONNECTED))
-    {
-      ret = pnetif->pdrv->if_disconnect(pnetif);
-    }
-    else
-    {
-      NET_DBG_ERROR("Incorrect requested State transition");
-      ret = NET_ERROR_INVALID_STATE_TRANSITION;
-    }
-  }
-  else
-  {
-    ret = NET_ERROR_PARAMETER;
-    NET_DBG_ERROR("Invalid interface.");
+    ret =  pnetif->pdrv->if_atcmd(pnetif, cmd, resp);
   }
   return ret;
 }
+
 
 /**
   * @brief  get network interface state
@@ -408,10 +384,12 @@ int32_t net_if_disconnect(net_if_handle_t *pnetif)
   * @param  state  a pointer to a net_state_t enum
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_getState(net_if_handle_t *pnetif, net_state_t *state)
+int32_t net_if_getState(net_if_handle_t *pnetif_in, net_state_t *state)
 {
   int32_t ret;
-  pnetif = netif_check(pnetif);
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
     *state = pnetif->state;
@@ -435,11 +413,11 @@ int32_t net_if_getState(net_if_handle_t *pnetif, net_state_t *state)
   * @param  pnetif a pointer to an allocated network interface structure
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_powersave_enable(net_if_handle_t *pnetif)
+int32_t net_if_powersave_enable(net_if_handle_t *pnetif_in)
 {
   int32_t ret;
-
-  pnetif = netif_check(pnetif);
+  net_if_handle_t *pnetif;
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
     if (pnetif->state == NET_STATE_CONNECTED)
@@ -471,11 +449,12 @@ int32_t net_if_powersave_enable(net_if_handle_t *pnetif)
   * @param  mac a pointer to an allocated macaddr_t structure
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_get_mac_address(net_if_handle_t *pnetif, macaddr_t *mac)
+int32_t net_if_get_mac_address(net_if_handle_t *pnetif_in, macaddr_t *mac)
 {
   int32_t ret;
+  net_if_handle_t *pnetif;
 
-  pnetif = netif_check(pnetif);
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
     if (NET_STATE_DEINITIALIZED != pnetif->state)
@@ -500,14 +479,15 @@ int32_t net_if_get_mac_address(net_if_handle_t *pnetif, macaddr_t *mac)
 /**
   * @brief  get IP address
   * @param  pnetif a pointer to an allocated network interface structure
-  * @param  ip a pointer to an allocated ipaddr_t structure
+  * @param  ip a pointer to an allocated net_ip_addr_t structure
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_get_ip_address(net_if_handle_t *pnetif, ipaddr_t *ip)
+int32_t net_if_get_ip_address(net_if_handle_t *pnetif_in, net_ip_addr_t *ip)
 {
-  int32_t ret = NET_ERROR_FRAMEWORK;
+  int32_t ret;
+  net_if_handle_t *pnetif;
 
-  pnetif = netif_check(pnetif);
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
     if (pnetif->state == NET_STATE_CONNECTED)
@@ -534,16 +514,18 @@ int32_t net_if_get_ip_address(net_if_handle_t *pnetif, ipaddr_t *ip)
   * @brief  get host by name
   * @param  pnetif a pointer to an allocated network interface structure
   * @param  name is a pointer to the hostname string
-  * @param  addr is a pointer to the structure sockaddr_t
+  * @param  addr is a pointer to the structure net_sockaddr_t
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_gethostbyname(net_if_handle_t *pnetif, sockaddr_t *addr, char_t *name)
+int32_t net_if_gethostbyname(net_if_handle_t *pnetif_in, net_sockaddr_t *addr, char_t *name)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
-  pnetif = netif_check(pnetif);
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
-    ret =  pnetif->pdrv->gethostbyname(pnetif, addr, name);
+    ret =  pnetif->pdrv->pgethostbyname(pnetif, addr, name);
   }
   return ret;
 }
@@ -557,13 +539,15 @@ int32_t net_if_gethostbyname(net_if_handle_t *pnetif, sockaddr_t *addr, char_t *
   * @param  response is an array of <count> integer, containing the time to get response for each iteration.
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int32_t count, int32_t delay, int32_t response[])
+int32_t net_if_ping(net_if_handle_t *pnetif_in, net_sockaddr_t *addr, int32_t count, int32_t delay, int32_t response[])
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
-  pnetif = netif_check(pnetif);
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
-    ret =  pnetif->pdrv->ping(pnetif, addr, count, delay, response);
+    ret =  pnetif->pdrv->pping(pnetif, addr, count, delay, response);
   }
   return ret;
 }
@@ -574,10 +558,12 @@ int32_t net_if_ping(net_if_handle_t *pnetif, sockaddr_t *addr, int32_t count, in
   * @param  mode is a boolean , true to activate DHCP
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_set_dhcp_mode(net_if_handle_t *pnetif, bool mode)
+int32_t net_if_set_dhcp_mode(net_if_handle_t *pnetif_in, bool mode)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
-  pnetif = netif_check(pnetif);
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
     pnetif->dhcp_mode = mode;
@@ -585,24 +571,65 @@ int32_t net_if_set_dhcp_mode(net_if_handle_t *pnetif, bool mode)
   }
   return ret;
 }
-
 /**
-  * @brief  setting ipaddr , gateway and netmask forcurrent network interface
+  * @brief  enable or disable dhcp server
   * @param  pnetif a pointer to an allocated network interface structure
-  * @param  ipaddr is a pointer to and ipaddr_t structure used as ip address
-  * @param  gateway is a pointer to the ipaddr_t structure used as gateway address
-  * @param  netmask is a pointer to the ipaddr_t structure used as the netmask
+  * @param  mode is a boolean , true to activate DHCP server
   * @retval 0 in case of success, an error code otherwise
   */
-int32_t net_if_set_ipaddr(net_if_handle_t *pnetif, ipaddr_t ipaddr, ipaddr_t gateway, ipaddr_t netmask)
+int32_t net_if_set_dhcp_server_mode(net_if_handle_t *pnetif_in, bool mode)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
-  pnetif = netif_check(pnetif);
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
   if (pnetif != NULL)
   {
-    pnetif->ipaddr  = ipaddr;
-    pnetif->gateway = gateway;
-    pnetif->netmask = netmask;
+    pnetif->dhcp_server = mode;
+    ret = NET_OK;
+  }
+  return ret;
+}
+/**
+  * @brief  set dhcp version IPv4 or IPv6
+  * @param  pnetif a pointer to an allocated network interface structure
+  * @param  version is an option from dhcp_client_ver_t enum
+  * @retval 0 in case of success, an error code otherwise
+  */
+int32_t net_if_set_dhcp_version(net_if_handle_t *pnetif_in, dhcp_client_ver_t version)
+{
+  int32_t ret = NET_ERROR_FRAMEWORK;
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
+  if (pnetif != NULL)
+  {
+    pnetif->dhcp_version = version;
+    ret = NET_OK;
+  }
+  return ret;
+}
+
+/**
+  * @brief  setting ipaddr , gateway and netmask for current network interface
+  * @param  pnetif a pointer to an allocated network interface structure
+  * @param  ipaddr is a pointer to and net_ip_addr_t structure used as ip address
+  * @param  gateway is a pointer to the net_ip_addr_t structure used as gateway address
+  * @param  netmask is a pointer to the net_ip_addr_t structure used as the netmask
+  * @retval 0 in case of success, an error code otherwise
+  */
+int32_t net_if_set_ipaddr(net_if_handle_t *pnetif_in, net_ip_addr_t ipaddr,
+                          net_ip_addr_t gateway, net_ip_addr_t netmask)
+{
+  int32_t ret = NET_ERROR_FRAMEWORK;
+  net_if_handle_t *pnetif;
+
+  pnetif = netif_check(pnetif_in);
+  if (pnetif != NULL)
+  {
+    pnetif->static_ipaddr  = ipaddr;
+    pnetif->static_gateway = gateway;
+    pnetif->static_netmask = netmask;
     ret = NET_OK;
   }
   return ret;

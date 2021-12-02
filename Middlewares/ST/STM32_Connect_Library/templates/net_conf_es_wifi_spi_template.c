@@ -30,7 +30,17 @@
 #define DATA_READY_IRQ  EXTI1_IRQn
 #endif /* TARGET_B_L475E_IOT01 */
 
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+#include "stm32h7xx_hal.h"
+#define DATA_READY_IRQ  EXTI9_5_IRQn
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
+
+#if defined(TARGET_STM32F413H_DISCOVERY) || defined(TARGET_B_L475E_IOT01)
 #include <core_cm4.h>
+#endif /* TARGET_STM32F413H_DISCOVERY || TARGET_B_L475E_IOT01 */
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+#include <core_cm7.h>
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
 #include <string.h>
 #include "es_wifi.h"
 #include "es_wifi_conf.h"
@@ -86,12 +96,34 @@ static void SPI_WIFI_MspInit(SPI_HandleTypeDef *hspi);
 #define WIFI_IS_CMDDATA_READY()            (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1) == GPIO_PIN_SET)
 #endif /* TARGET_B_L475E_IOT01 */
 
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+#define WIFI_RESET_MODULE()                do{\
+                                               HAL_GPIO_WritePin(GPIOI, GPIO_PIN_1, GPIO_PIN_RESET);\
+                                               HAL_Delay(10);\
+                                               HAL_GPIO_WritePin(GPIOI, GPIO_PIN_1, GPIO_PIN_SET);\
+                                               HAL_Delay(500);\
+                                             }while(0);
+
+
+#define WIFI_ENABLE_NSS()                  do{ \
+                                               HAL_GPIO_WritePin( GPIOA, GPIO_PIN_11, GPIO_PIN_RESET );\
+                                             }while(0);
+
+#define WIFI_DISABLE_NSS()                 do{ \
+                                               HAL_GPIO_WritePin( GPIOA, GPIO_PIN_11, GPIO_PIN_SET );\
+                                             }while(0);
+
+#define WIFI_IS_CMDDATA_READY()            (HAL_GPIO_ReadPin(GPIOI, GPIO_PIN_5) == GPIO_PIN_SET)
+
+#define SPI_INTERFACE_PRIO                 0
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
+
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-static  int32_t volatile spi_rx_event = 0;
-static  int32_t volatile spi_tx_event = 0;
-static  int32_t volatile cmddata_rdy_rising_event = 0;
+static  int32_t __IO spi_rx_event = 0;
+static  int32_t __IO spi_tx_event = 0;
+static  int32_t __IO cmddata_rdy_rising_event = 0;
 
 #ifdef WIFI_USE_CMSIS_OS
 osMutexId es_wifi_mutex;
@@ -146,7 +178,7 @@ const   mbedtls_x509_crt_profile mbedtls_x509_crt_amazon_suite =
 #endif /* MBEDTLS_ECP_C */
   2048
 };
-const unsigned int32_t net_tls_sizeof_suite_structure =   sizeof(mbedtls_x509_crt_profile);
+const int32_t net_tls_sizeof_suite_structure = sizeof(mbedtls_x509_crt_profile);
 const void    *net_tls_user_suite0 = (void *) &mbedtls_x509_crt_amazon_suite;
 #endif /* GENERATOR_AWS_CLOUD */
 
@@ -295,20 +327,99 @@ static void SPI_WIFI_MspInit(SPI_HandleTypeDef *hspi)
   GPIO_Init.Alternate = GPIO_AF6_SPI3;
   HAL_GPIO_Init(GPIOC, &GPIO_Init);
 #endif /* TARGET_B_L475E_IOT01 */
+
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+  __HAL_RCC_SPI2_CLK_ENABLE();
+  __HAL_RCC_SPI2_FORCE_RESET();
+  __HAL_RCC_SPI2_RELEASE_RESET();
+
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOI_CLK_ENABLE();
+
+  /* configure Wake up pin */
+  HAL_GPIO_WritePin(GPIOI, GPIO_PIN_2, GPIO_PIN_RESET);
+  GPIO_Init.Pin       = GPIO_PIN_2;
+  GPIO_Init.Mode      = GPIO_MODE_OUTPUT_PP;
+  GPIO_Init.Pull      = GPIO_NOPULL;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(GPIOI, &GPIO_Init);
+
+  /* configure Data ready pin */
+  GPIO_Init.Pin       = GPIO_PIN_5;
+  GPIO_Init.Mode      = GPIO_MODE_IT_RISING;
+  GPIO_Init.Pull      = GPIO_NOPULL;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOI, &GPIO_Init);
+
+  /* configure Reset pin */
+  GPIO_Init.Pin       = GPIO_PIN_1;
+  GPIO_Init.Mode      = GPIO_MODE_OUTPUT_PP;
+  GPIO_Init.Pull      = GPIO_NOPULL;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_LOW;
+  GPIO_Init.Alternate = GPIO_AF5_SPI2;
+  HAL_GPIO_Init(GPIOI, &GPIO_Init);
+
+  /* configure SPI NSS pin pin */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+  GPIO_Init.Pin       =  GPIO_PIN_11;
+  GPIO_Init.Mode      = GPIO_MODE_OUTPUT_PP;
+  GPIO_Init.Pull      = GPIO_NOPULL;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(GPIOA, &GPIO_Init);
+
+  /* configure SPI CLK pin */
+  GPIO_Init.Pin       =  GPIO_PIN_12;
+  GPIO_Init.Mode      = GPIO_MODE_AF_PP;
+  GPIO_Init.Pull      = GPIO_NOPULL;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_MEDIUM;
+  GPIO_Init.Alternate = GPIO_AF5_SPI2;
+  HAL_GPIO_Init(GPIOA, &GPIO_Init);
+
+  /* configure SPI MOSI pin */
+  GPIO_Init.Pin       = GPIO_PIN_3;
+  GPIO_Init.Mode      = GPIO_MODE_AF_PP;
+  GPIO_Init.Pull      = GPIO_NOPULL;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_LOW;
+  GPIO_Init.Alternate = GPIO_AF5_SPI2;
+  HAL_GPIO_Init(GPIOC, &GPIO_Init);
+
+  /* configure SPI MISO pin */
+  GPIO_Init.Pin       = GPIO_PIN_2;
+  GPIO_Init.Mode      = GPIO_MODE_AF_PP;
+  GPIO_Init.Pull      = GPIO_PULLUP;
+  GPIO_Init.Speed     = GPIO_SPEED_FREQ_LOW;
+  GPIO_Init.Alternate = GPIO_AF5_SPI2;
+  HAL_GPIO_Init(GPIOC, &GPIO_Init);
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
 }
 
+#if defined(TARGET_STM32F413H_DISCOVERY) || defined(TARGET_B_L475E_IOT01)
 /**
   * @brief  Initialize the SPI3
   * @param  None
   * @retval None
   */
+#endif /* TARGET_STM32F413H_DISCOVERY || TARGET_B_L475E_IOT01 */
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+/**
+  * @brief  Initialize the SPI2
+  * @param  None
+  * @retval None
+  */
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
 static int8_t SPI_WIFI_Init(uint16_t mode)
 {
   int8_t  rc = 0;
 
   if (mode == ES_WIFI_INIT)
   {
+#if defined(TARGET_STM32F413H_DISCOVERY) || defined(TARGET_B_L475E_IOT01)
     hspi.Instance               = SPI3;
+#endif /* TARGET_STM32F413H_DISCOVERY || TARGET_B_L475E_IOT01 */
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+    hspi.Instance               = SPI2;
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
     SPI_WIFI_MspInit(&hspi);
 
     hspi.Init.Mode              = SPI_MODE_MASTER;
@@ -333,8 +444,15 @@ static int8_t SPI_WIFI_Init(uint16_t mode)
     HAL_NVIC_EnableIRQ((IRQn_Type)DATA_READY_IRQ);
 
     /* Enable Interrupt for SPI tx and rx */
+#if defined(TARGET_STM32F413H_DISCOVERY) || defined(TARGET_B_L475E_IOT01)
     HAL_NVIC_SetPriority((IRQn_Type)SPI3_IRQn, SPI_INTERFACE_PRIO, 0);
     HAL_NVIC_EnableIRQ((IRQn_Type)SPI3_IRQn);
+#endif /* TARGET_STM32F413H_DISCOVERY || TARGET_B_L475E_IOT01 */
+#if defined(TARGET_STM32H7B3I_DISCOVERY)
+    HAL_NVIC_SetPriority((IRQn_Type)SPI2_IRQn, SPI_INTERFACE_PRIO, 0);
+    HAL_NVIC_EnableIRQ((IRQn_Type)SPI2_IRQn);
+#endif /* TARGET_STM32H7B3I_DISCOVERY */
+
 
 #ifdef WIFI_USE_CMSIS_OS
     cmddata_rdy_rising_event = 0;
@@ -541,7 +659,7 @@ int16_t SPI_WIFI_ReceiveData(uint8_t *pData, uint16_t len, uint32_t timeout)
   return length;
 }
 /**
-  * @brief  Send wifi Data thru SPI
+  * @brief  Send wifi Data through SPI
   * @param  pdata : pointer to data
   * @param  len : Data length
   * @param  timeout : send timeout in mS
@@ -598,7 +716,7 @@ int16_t SPI_WIFI_SendData(uint8_t *pdata,  uint16_t len, uint32_t timeout)
   */
 void SPI_WIFI_DelayUs(uint32_t n)
 {
-  volatile        uint32_t ct = 0;
+  __IO        uint32_t ct = 0;
   uint32_t        loop_per_us = 0;
   static uint32_t cycle_per_loop = 0;
 
@@ -677,7 +795,7 @@ void    SPI_WIFI_ISR(void)
 }
 
 /**
-  * @brief  probe function to register wifi to connectivity framwotk
+  * @brief  probe function to register wifi to Network library framework
   * @param  None
   * @retval None
   */

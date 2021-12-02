@@ -21,9 +21,11 @@
 #include "net_connect.h"
 #include "net_internals.h"
 
+#ifndef NET_BYPASS_NET_SOCKET
+#define OPTCHECKTYPE(type,optlen)       if (sizeof(type)!= optlen) {ret = NET_ERROR_PARAMETER; break;}
 
-#define OPTCHECKTYPE(type,optlen)       if (sizeof(type)!= optlen) {ret = NET_ERROR_PARAMETER; goto END_SETSOCK;}
-#define OPTCHECKSTRING(opt,optlen)       if (strlen(opt)!= (optlen-1U)) { ret = NET_ERROR_PARAMETER;goto END_SETSOCK;}
+
+#define OPTCHECKSTRING(opt,optlen)       if (strlen(opt)!= (optlen-1U)) { ret = NET_ERROR_PARAMETER;break;}
 
 
 static int32_t create_low_level_socket(int32_t sock);
@@ -73,9 +75,20 @@ static int32_t create_low_level_socket(int32_t sock)
   {
     if (net_access_control(pSocket->pnetif, NET_ACCESS_SOCKET, &pSocket->ulsocket))
     {
-      pSocket->ulsocket = pSocket->pnetif->pdrv->socket(sockets[sock].domain,
-                                                        sockets[sock].type,
-                                                        sockets[sock].protocol);
+      if (0 == sockets[sock].protocol)
+      {
+        if (sockets[sock].type == NET_SOCK_STREAM)
+        {
+          sockets[sock].protocol = NET_IPPROTO_TCP;
+        }
+        if (sockets[sock].type == NET_SOCK_DGRAM)
+        {
+          sockets[sock].protocol = NET_IPPROTO_UDP;
+        }
+      }
+      pSocket->ulsocket = pSocket->pnetif->pdrv->psocket(sockets[sock].domain,
+                                                         sockets[sock].type,
+                                                         sockets[sock].protocol);
     }
   }
   return pSocket->ulsocket;
@@ -97,6 +110,7 @@ static int32_t check_low_level_socket(int32_t sock)
 static int32_t find_free_socket(void)
 {
   int32_t sidx;
+  int32_t ret = NET_ERROR_INVALID_SOCKET;
   LOCK_SOCK_ARRAY();
   for (sidx = 0; sidx < NET_MAX_SOCKETS_NBR; sidx++)
   {
@@ -115,13 +129,15 @@ static int32_t find_free_socket(void)
       sockets[sidx].write_timeout = NET_SOCK_DEFAULT_SEND_TO;
       sockets[sidx].blocking = true;
       sockets[sidx].ulsocket = -1;
+      sockets[sidx].pnetif = net_if_find(NULL);
+
       LOCK_SOCK(sidx);
-      UNLOCK_SOCK_ARRAY();
-      return (int32_t) sidx;
+      ret =  sidx;
+      break;
     }
   }
   UNLOCK_SOCK_ARRAY();
-  return NET_ERROR_INVALID_SOCKET;
+  return ret;
 }
 
 static int32_t   clone_socket(int32_t sock)
@@ -171,16 +187,14 @@ int32_t net_socket(int32_t domain, int32_t type, int32_t protocol)
 /**
   * @brief  Bind a socket
   * @param  sock [in] integer socket number
-  * @param  addr [in] pointer to sockaddr_t structure
-  * @param  addrlen [in] integer length of the sockaddr_t
+  * @param  addr [in] pointer to net_sockaddr_t structure
+  * @param  addrlen [in] unsigned integer length of the net_sockaddr_t
   * @retval zero in case of success, error code otherwise
   */
-int32_t net_bind(int32_t sock, sockaddr_t *addr, int32_t addrlen)
+int32_t net_bind(int32_t sock, net_sockaddr_t *addr, uint32_t addrlen)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
   net_socket_t *pSocket;
-  net_if_handle_t *pnetif;
-  sockaddr_in_t *ifaddr = (sockaddr_in_t *)addr;
 
   if (!is_valid_socket(sock))
   {
@@ -189,36 +203,33 @@ int32_t net_bind(int32_t sock, sockaddr_t *addr, int32_t addrlen)
   }
   else
   {
-    /* find the interface */
-    pnetif = net_if_find(S_ADDR(ifaddr->sin_addr));
-    if (pnetif != NULL)
+    pSocket = net_socket_get_and_lock(sock);
+#if (NET_USE_DEFAULT_INTERFACE == 1)
+    if (pSocket->pnetif == NULL)
     {
-      pSocket = net_socket_get_and_lock(sock);
-      pSocket->pnetif = pnetif;
-      if (create_low_level_socket(sock) < 0)
-      {
-        ret = NET_ERROR_SOCKET_FAILURE;
-        NET_DBG_ERROR("low level socket creation failed.\n");
-      }
-      else
-      {
-        if (net_access_control(pnetif, NET_ACCESS_BIND, &ret))
-        {
-          UNLOCK_SOCK(sock);
-          ret = pSocket->pnetif->pdrv->bind(pSocket->ulsocket, addr, addrlen);
-          LOCK_SOCK(sock);
-          if (ret != NET_OK)
-          {
-            NET_DBG_ERROR("Socket cannot be bound");
-          }
-        }
-      }
-      UNLOCK_SOCK(sock);
+      pSocket->pnetif = net_if_find(NULL);
+    }
+#endif /* NET_USE_DEFAULT_INTERFACE */
+
+    if (create_low_level_socket(sock) < 0)
+    {
+      ret = NET_ERROR_SOCKET_FAILURE;
+      NET_DBG_ERROR("low level socket creation failed.\n");
     }
     else
     {
-      NET_DBG_ERROR("No physical interface can be bound");
+      if (net_access_control(pSocket->pnetif, NET_ACCESS_BIND, &ret))
+      {
+        UNLOCK_SOCK(sock);
+        ret = pSocket->pnetif->pdrv->pbind(pSocket->ulsocket, addr, addrlen);
+        LOCK_SOCK(sock);
+        if (ret != NET_OK)
+        {
+          NET_DBG_ERROR("Socket cannot be bound");
+        }
+      }
     }
+    UNLOCK_SOCK(sock);
   }
   return ret;
 }
@@ -226,12 +237,12 @@ int32_t net_bind(int32_t sock, sockaddr_t *addr, int32_t addrlen)
 /**
   * @brief  Accept a connection from a client
   * @param  sock [in] integer socket number
-  * @param  addr [out] pointer to sockaddr_t structure of remote connection
-  * @param  addrlen [out] pointer to integer, length of the remote sockaddr_t
+  * @param  addr [out] pointer to net_sockaddr_t structure of remote connection
+  * @param  addrlen [out] pointer to unsigned integer, length of the remote net_sockaddr_t
   * @retval socket number as an integer greater than zero in case of success, zero or less than zero otherwise
   */
 
-int32_t net_accept(int32_t sock, sockaddr_t *addr, int32_t *addrlen)
+int32_t net_accept(int32_t sock, net_sockaddr_t *addr, uint32_t *addrlen)
 {
   int32_t newsock;
   int32_t ulnewsock;
@@ -255,7 +266,7 @@ int32_t net_accept(int32_t sock, sockaddr_t *addr, int32_t *addrlen)
       if (net_access_control(pSocket->pnetif, NET_ACCESS_BIND, &ulnewsock))
       {
         UNLOCK_SOCK(sock);
-        ulnewsock = pSocket->pnetif->pdrv->accept(pSocket->ulsocket, addr, addrlen);
+        ulnewsock = pSocket->pnetif->pdrv->paccept(pSocket->ulsocket, addr, addrlen);
         LOCK_SOCK(sock);
 
       }
@@ -310,7 +321,7 @@ int32_t net_listen(int32_t sock, int32_t backlog)
       if (net_access_control(pSocket->pnetif, NET_ACCESS_LISTEN, &ret))
       {
         UNLOCK_SOCK(sock);
-        ret = pSocket->pnetif->pdrv->listen(pSocket->ulsocket, backlog);
+        ret = pSocket->pnetif->pdrv->plisten(pSocket->ulsocket, backlog);
         LOCK_SOCK(sock);
 
         if (ret != NET_OK)
@@ -327,12 +338,12 @@ int32_t net_listen(int32_t sock, int32_t backlog)
 /**
   * @brief  connect socket to a server
   * @param  sock [in] integer socket number
-  * @param  addr [in] pointer to sockaddr_t structure of server
-  * @param  addrlen [in] pointer to integer, length of the server sockaddr_t
+  * @param  addr [in] pointer to net_sockaddr_t structure of server
+  * @param  addrlen [in] pointer to unsigned integer, length of the server net_sockaddr_t
   * @retval zero in case of success, none zero value in case of error
   */
 
-int32_t net_connect(int32_t sock, sockaddr_t *addr, int32_t addrlen)
+int32_t net_connect(int32_t sock, net_sockaddr_t *addr, uint32_t addrlen)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
   net_socket_t *pSocket;
@@ -348,7 +359,7 @@ int32_t net_connect(int32_t sock, sockaddr_t *addr, int32_t addrlen)
 #if (NET_USE_DEFAULT_INTERFACE == 1)
     if (pSocket->pnetif == NULL)
     {
-      pSocket->pnetif = net_if_find(0);
+      pSocket->pnetif = net_if_find(NULL);
     }
 #endif /* NET_USE_DEFAULT_INTERFACE */
 
@@ -362,20 +373,34 @@ int32_t net_connect(int32_t sock, sockaddr_t *addr, int32_t addrlen)
       if (create_low_level_socket(sock) < 0)
       {
         NET_DBG_ERROR("low level socket creation failed.\n");
-        ret = NET_ERROR_SOCKET_FAILURE;
+        if (create_low_level_socket(sock) < 0)
+        {
+          ret = NET_ERROR_SOCKET_FAILURE;
+        }
+        else
+        {
+          NET_DBG_ERROR("2nd try ok level socket creation success.\n");
+
+        }
       }
       else
       {
         if (net_access_control(pSocket->pnetif, NET_ACCESS_CONNECT, &ret))
         {
           UNLOCK_SOCK(sock);
-          ret = pSocket->pnetif->pdrv->connect(pSocket->ulsocket, addr, addrlen);
+          ret = pSocket->pnetif->pdrv->pconnect(pSocket->ulsocket, addr, addrlen);
           LOCK_SOCK(sock);
 
           if (ret != NET_OK)
           {
             /* clear flag to avoid issue on clean up , mbedtls not started */
 #ifdef NET_MBEDTLS_HOST_SUPPORT
+            if ((pSocket->is_secure == true) && (pSocket->tlsData != NULL))
+            {
+              /*cstat -MISRAC2012-Rule-21.3 -MISRAC2012-Dir-4.13_h */
+              NET_FREE(pSocket->tlsData);
+              /*cstat +MISRAC2012-Rule-21.3 +MISRAC2012-Dir-4.13_h */
+            }
             pSocket->is_secure = false;
 #endif /* NET_MBEDTLS_HOST_SUPPORT */
             NET_DBG_ERROR("Connection cannot be established.\n");
@@ -461,10 +486,10 @@ int32_t net_send(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags)
           if (net_access_control(pSocket->pnetif, NET_ACCESS_SEND, &ret))
           {
             UNLOCK_SOCK(sock);
-            ret = pSocket->pnetif->pdrv->send(pSocket->ulsocket, buf, len, flags);
+            ret = pSocket->pnetif->pdrv->psend(pSocket->ulsocket, buf, len, flags);
             LOCK_SOCK(sock);
 
-            if ((ret < 0) && (ret != NET_ERROR_CLOSE_SOCKET))
+            if ((ret < 0) && (ret != NET_ERROR_DISCONNECTED))
             {
               NET_DBG_ERROR("Error during sending data.\n");
             }
@@ -485,9 +510,11 @@ int32_t net_send(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags)
   * @param  flags [in] specify blocking or non blocking , 0 is blocking mode, NET_MSG_DONTWAIT is non blocking
   * @retval number of byte received, negative value in case of error or timeout
   */
-int32_t net_recv(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags)
+int32_t net_recv(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags_in)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
+  int32_t flags = flags_in;
+
   net_socket_t *pSocket;
 
   if (!is_valid_socket(sock))
@@ -525,11 +552,11 @@ int32_t net_recv(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags)
             UNLOCK_SOCK(sock);
             if (pSocket->read_timeout == 0)
             {
-              flags = NET_MSG_DONTWAIT;
+              flags = (int8_t) NET_MSG_DONTWAIT;
             }
-            ret = pSocket->pnetif->pdrv->recv(pSocket->ulsocket, buf, len, flags);
+            ret = pSocket->pnetif->pdrv->precv(pSocket->ulsocket, buf, len, flags);
             LOCK_SOCK(sock);
-            if ((ret < 0) && (ret != NET_TIMEOUT) && (ret != NET_ERROR_CLOSE_SOCKET))
+            if ((ret < 0) && (ret != NET_TIMEOUT) && (ret != NET_ERROR_DISCONNECTED))
             {
               NET_DBG_ERROR("Error during receiving data. %ld\n", ret);
             }
@@ -549,11 +576,11 @@ int32_t net_recv(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags)
   * @param  buf [in] pointer to an array of unsigned byte
   * @param  len [in] number of byte to send
   * @param  flags [in] specify blocking or non blocking , 0 is blocking mode, NET_MSG_DONTWAIT is non blocking
-  * @param  to [in] pointer to sockaddr_t structure destination address
-  * @param  tolen [in] pointer to integer, length of the destination sockaddr_t
+  * @param  to [in] pointer to net_sockaddr_t structure destination address
+  * @param  tolen [in] pointer to unsigned integer, length of the destination net_sockaddr_t
   * @retval number of byte transmitted, negative value in case of error or timeout
   */
-int32_t net_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *to, int32_t tolen)
+int32_t net_sendto(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags, net_sockaddr_t *to, uint32_t tolen)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
   net_socket_t *pSocket;
@@ -561,7 +588,7 @@ int32_t net_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, socka
   if (!is_valid_socket(sock))
   {
     NET_DBG_ERROR("Invalid socket.\n");
-    return  NET_ERROR_INVALID_SOCKET;
+    ret = NET_ERROR_INVALID_SOCKET;
   }
   else
   {
@@ -582,9 +609,9 @@ int32_t net_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, socka
         if (net_access_control(pSocket->pnetif, NET_ACCESS_SENDTO, &ret))
         {
           UNLOCK_SOCK(sock);
-          ret = pSocket->pnetif->pdrv->sendto(pSocket->ulsocket, buf, len, flags, to, tolen);
+          ret = pSocket->pnetif->pdrv->psendto(pSocket->ulsocket, buf, len, flags, to, tolen);
           LOCK_SOCK(sock);
-          if ((ret < 0) && (ret != NET_ERROR_CLOSE_SOCKET))
+          if ((ret < 0) && (ret != NET_ERROR_DISCONNECTED))
           {
             NET_DBG_ERROR("Error during sending data.\n");
           }
@@ -602,13 +629,16 @@ int32_t net_sendto(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, socka
   * @param  buf [in] pointer to an array of unsigned byte
   * @param  len [in] number of byte to receive
   * @param  flags [in] specify blocking or non blocking , 0 is blocking mode, NET_MSG_DONTWAIT is non blocking
-  * @param  from [in] pointer to sockaddr_t structure to store the source address
-  * @param  fromlen [in] pointer to integer, length of the source sockaddr_t
+  * @param  from [in] pointer to net_sockaddr_t structure to store the source address
+  * @param  fromlen [in] pointer to unsigned integer, length of the source net_sockaddr_t
   * @retval number of byte received, negative value in case of error or timeout
   */
-int32_t net_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, sockaddr_t *from, int32_t *fromlen)
+int32_t net_recvfrom(int32_t sock, uint8_t *buf, uint32_t len, int32_t flags_in, net_sockaddr_t *from,
+                     uint32_t *fromlen)
 {
   int32_t ret = NET_ERROR_FRAMEWORK;
+  int32_t flags = flags_in;
+
   net_socket_t *pSocket;
 
   if (!is_valid_socket(sock))
@@ -637,13 +667,15 @@ int32_t net_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, soc
           UNLOCK_SOCK(sock);
           if (pSocket->read_timeout == 0)
           {
-            flags = NET_MSG_DONTWAIT;
+            flags = (int8_t) NET_MSG_DONTWAIT;
           }
-          ret = pSocket->pnetif->pdrv->recvfrom(pSocket->ulsocket, buf, len, flags, from, fromlen);
+          ret = pSocket->pnetif->pdrv->precvfrom(pSocket->ulsocket, buf, len, flags, from, fromlen);
           LOCK_SOCK(sock);
-          if ((ret < 0) && (ret != NET_TIMEOUT) && (ret != NET_ERROR_CLOSE_SOCKET))
+          if ((ret < 0) && (ret != NET_TIMEOUT) && (ret != NET_ERROR_DISCONNECTED))
           {
-            NET_DBG_ERROR("Error during receiving data %ld\n", ret);
+            /*cstat -MISRAC2012-Dir-4.4 */
+            /*   NET_DBG_ERROR("Error during receiving data %ld\n", ret);*/
+            /*cstat +MISRAC2012-Dir-4.4 */
           }
         }
         UNLOCK_SOCK(sock);
@@ -657,7 +689,7 @@ int32_t net_recvfrom(int32_t sock, uint8_t *buf, int32_t len, int32_t flags, soc
 /**
   * @brief  shutdown a connection
   * @param  sock [in] integer socket number
-  * @param  mode [in] integer, shutdown mode among NET_SHUTDOWN_R,NET_SHUTDOWN_W orNET_SHUTDOWN_RW
+  * @param  mode [in] integer, shutdown mode among NET_SHUTDOWN_R,NET_SHUTDOWN_W or NET_SHUTDOWN_RW
   * @retval zero on success, negative value in case of error
   */
 int32_t net_shutdown(int32_t sock, int32_t      mode)
@@ -687,7 +719,7 @@ int32_t net_shutdown(int32_t sock, int32_t      mode)
 
     if (check_low_level_socket(sock) < 0)
     {
-      NET_DBG_ERROR("failed to shutdown :low level socket not existing.\n");
+      NET_WARNING("failed to shutdown :low level socket not existing.\n");
       pSocket = &sockets[sock];
       pSocket->status = SOCKET_NOT_ALIVE;
       ret = NET_OK;
@@ -697,15 +729,16 @@ int32_t net_shutdown(int32_t sock, int32_t      mode)
       if (net_access_control(pSocket->pnetif, NET_ACCESS_CLOSE, &ret))
       {
         UNLOCK_SOCK(sock);
-        ret = pSocket->pnetif->pdrv->shutdown(pSocket->ulsocket, mode);
+        ret = pSocket->pnetif->pdrv->pshutdown(pSocket->ulsocket, mode);
         LOCK_SOCK(sock);
 
         if (ret != NET_OK)
         {
           NET_DBG_ERROR("Socket cannot be shutdown.\n");
         }
-        /*     FIXME
-                pSocket->status = SOCKET_NOT_ALIVE; */
+        /*cstat -MISRAC2012-Dir-4.4 */
+        /*     FIXME pSocket->status = SOCKET_NOT_ALIVE; */
+        /*cstat +MISRAC2012-Dir-4.4 */
       }
     }
     UNLOCK_SOCK(sock);
@@ -726,7 +759,7 @@ int32_t net_closesocket(int32_t sock)
 
   if (!is_valid_socket(sock))
   {
-    NET_DBG_ERROR("Invalid socket.\n");
+    NET_WARNING("Invalid socket, can not close it.\n");
     ret = NET_ERROR_INVALID_SOCKET;
   }
   else
@@ -746,7 +779,7 @@ int32_t net_closesocket(int32_t sock)
 
     if (check_low_level_socket(sock) < 0)
     {
-      NET_DBG_ERROR("failed to close :low level socket not existing.\n");
+      NET_WARNING("failed to close :low level socket not existing.\n");
       pSocket = &sockets[sock];
       pSocket->status = SOCKET_NOT_ALIVE;
       ret = NET_OK;
@@ -756,7 +789,7 @@ int32_t net_closesocket(int32_t sock)
       if (net_access_control(pSocket->pnetif, NET_ACCESS_CLOSE, &ret))
       {
         UNLOCK_SOCK(sock);
-        ret = pSocket->pnetif->pdrv->close(pSocket->ulsocket, pSocket->cloneserver);
+        ret = pSocket->pnetif->pdrv->pclose(pSocket->ulsocket, pSocket->cloneserver);
         LOCK_SOCK(sock);
 
         if (ret != NET_OK)
@@ -773,297 +806,435 @@ int32_t net_closesocket(int32_t sock)
   return ret;
 }
 
-/**
-  * @brief  set socket option
-  * @param  sock [in] integer socket number
-  * @param  level [in] integer, protocol layer thta option is to be applied, must be set to NET_SOL_SOCKET
-  * @param  optname [in] integer, option from the supported option list
-  * @param  optvalue [in] void pointer to the wanted option value  mode among
-  * NET_SHUTDOWN_R,NET_SHUTDOWN_W orNET_SHUTDOWN_RW
-  * @retval zero on success, negative value in case of error
-  */
 
-int32_t net_setsockopt(int32_t sock, int32_t level, net_socketoption_t optname,  const void *optvalue, uint32_t optlen)
+/**
+  * @brief  get socket peer information
+  * @param  sock [in] integer source socket number
+  * @param  name [in] pointer to net_sockaddr_t structure to write the peer address
+  * @param  namelen [in] pointer to unsigned integer, length of the peer net_sockaddr_t
+  * @retval negative value in case of error
+  */
+int32_t net_getpeername(int32_t sock, net_sockaddr_t *name, uint32_t *namelen)
 {
-  int32_t ret = NET_ERROR_FRAMEWORK;
+  int32_t       ret = NET_ERROR_FRAMEWORK;
   net_socket_t *pSocket;
 
   if (!is_valid_socket(sock))
   {
     NET_DBG_ERROR("Invalid socket.\n");
-    return NET_ERROR_INVALID_SOCKET;
-  }
-
-
-  pSocket = net_socket_get_and_lock(sock);
-
-  if (optname == NET_SO_BINDTODEVICE)
-  {
-    OPTCHECKTYPE(void *, optlen);
-    pSocket->pnetif = (net_if_handle_t *)optvalue;
-    ret = NET_OK;
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_RCVTIMEO)
-  {
-    OPTCHECKTYPE(int32_t, optlen);
-    pSocket->read_timeout = *(const int32_t *)optvalue;
-  }
-  if (optname == NET_SO_SNDTIMEO)
-  {
-    OPTCHECKTYPE(int32_t, optlen);
-    pSocket->write_timeout = *(const int32_t *)optvalue;
-  }
-#ifdef NET_MBEDTLS_HOST_SUPPORT
-  if (optname == NET_SO_RCVTIMEO)
-  {
-    net_mbedtls_set_read_timeout(pSocket);
-  }
-
-  if (optname == NET_SO_SECURE)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls device certificats, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->is_secure = true;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_DEV_CERT)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKSTRING(optvalue, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls device certificats, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_dev_cert = (const unsigned char *) optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_DEV_KEY)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKSTRING(optvalue, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls device key, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_dev_key = (const unsigned char *) optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_PASSWORD)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKSTRING(optvalue, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls password, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_dev_pwd = (const unsigned char *) optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_CA_CERT)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKSTRING(optvalue, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls root ca, Allocation failure\n");
-        return NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_ca_certs = (const unsigned char *) optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_CA_CRL)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKSTRING(optvalue, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls revocation certification list, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_ca_crl = (const unsigned char *) optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_SERVER_VERIFICATION)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKTYPE(bool, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls server verification mode, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_srv_verification = (*(const bool *)optvalue > 0) ? true : false;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  if (optname == NET_SO_TLS_SERVER_NAME)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKSTRING(optvalue, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls server name, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_srv_name = (const char_t *)optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-
-  /* Set the X.509 security profile */
-  if (optname == NET_SO_TLS_CERT_PROF)
-  {
-    if (pSocket->status == SOCKET_CONNECTED)
-    {
-      ret = NET_ERROR_IS_CONNECTED;
-    }
-    else
-    {
-      OPTCHECKTYPE(mbedtls_x509_crt_profile, optlen);
-      if (!net_mbedtls_check_tlsdata(pSocket))
-      {
-        NET_DBG_ERROR("Failed to set tls X.509 security profile, Allocation failure\n");
-        ret = NET_ERROR_NO_MEMORY;
-      }
-      else
-      {
-        pSocket->tlsData->tls_cert_prof = (const mbedtls_x509_crt_profile *) optvalue;
-        ret = NET_OK;
-      }
-    }
-    goto END_SETSOCK;
-  }
-#endif /* NET_MBEDTLS_HOST_SUPPORT */
-
-
-#if (NET_USE_DEFAULT_INTERFACE == 1)
-  if (pSocket->pnetif == NULL)
-  {
-    pSocket->pnetif = net_if_find(0);
-  }
-#endif /* NET_USE_DEFAULT_INTERFACE */
-  if (pSocket->pnetif == NULL)
-  {
-    NET_DBG_ERROR("No physical interface can be bound");
-    ret = NET_ERROR_INTERFACE_FAILURE;
+    ret = NET_ERROR_INVALID_SOCKET;
   }
   else
   {
-    if (create_low_level_socket(sock) < 0)
+    if (name == NULL)
     {
-      NET_DBG_ERROR("low level socket creation failed.\n");
-      ret = NET_ERROR_SOCKET_FAILURE;
+      ret = NET_ERROR_INVALID_SOCKET;
     }
     else
     {
-      if (net_access_control(pSocket->pnetif, NET_ACCESS_SETSOCKOPT, &ret))
+      if (check_low_level_socket(sock) < 0)
       {
-        UNLOCK_SOCK(sock);
-        ret = pSocket->pnetif->pdrv->setsockopt(pSocket->ulsocket, level, optname, optvalue, optlen);
-        LOCK_SOCK(sock);
-        if (ret < 0)
+        NET_DBG_ERROR("low level socket has not been created.\n");
+        ret = NET_ERROR_SOCKET_FAILURE;
+      }
+      else
+      {
+        pSocket = net_socket_get_and_lock(sock);
         {
-          NET_DBG_ERROR("Error during setting option.\n");
+          if (net_access_control(pSocket->pnetif, NET_ACCESS_SOCKET, &ret))
+          {
+            UNLOCK_SOCK(sock);
+            ret = pSocket->pnetif->pdrv->pgetpeername(pSocket->ulsocket, name, namelen);
+            LOCK_SOCK(sock);
+            if (ret < 0)
+            {
+              NET_DBG_ERROR("Error during getpeername data.\n");
+            }
+          }
         }
+        UNLOCK_SOCK(sock);
       }
     }
   }
-END_SETSOCK:
-  UNLOCK_SOCK(sock);
+  return ret;
+}
+
+/**
+  * @brief  get socket name information
+  * @param  sock [in] integer source socket number
+  * @param  name [in] pointer to net_sockaddr_t structure to write the socket address
+  * @param  namelen [in] pointer to unsigned integer, length of the socket net_sockaddr_t
+  * @retval negative value in case of error
+  */
+int32_t net_getsockname(int32_t sock, net_sockaddr_t *name, uint32_t *namelen)
+{
+  int32_t       ret = NET_ERROR_FRAMEWORK;
+  net_socket_t *pSocket;
+
+  if (!is_valid_socket(sock))
+  {
+    NET_DBG_ERROR("Invalid socket.\n");
+    ret = NET_ERROR_INVALID_SOCKET;
+  }
+  else
+  {
+    if (name == NULL)
+    {
+      ret = NET_ERROR_INVALID_SOCKET;
+    }
+    else
+    {
+      if (check_low_level_socket(sock) < 0)
+      {
+        NET_DBG_ERROR("low level socket has not been created.\n");
+        ret = NET_ERROR_SOCKET_FAILURE;
+      }
+      else
+      {
+        pSocket = net_socket_get_and_lock(sock);
+        {
+          if (net_access_control(pSocket->pnetif, NET_ACCESS_SOCKET, &ret))
+          {
+            UNLOCK_SOCK(sock);
+            ret = pSocket->pnetif->pdrv->pgetsockname(pSocket->ulsocket, name, namelen);
+            LOCK_SOCK(sock);
+            if (ret < 0)
+            {
+              NET_DBG_ERROR("Error during getpeername data.\n");
+            }
+          }
+        }
+        UNLOCK_SOCK(sock);
+      }
+    }
+  }
+  return ret;
+}
+
+
+/**
+  * @brief  set socket option
+  * @param  sock [in] integer socket number
+  * @param  level [in] integer, protocol layer that option is to be applied, must be set to NET_SOL_SOCKET
+  * @param  optname [in] integer, option from the supported option list
+  * @param  optvalue [in] void pointer to the wanted option value
+  * @param  optlen [in] length of data pointed by optvalue
+  * @retval zero on success, negative value in case of error
+  */
+
+
+int32_t net_setsockopt(int32_t sock, int32_t level, net_socketoption_t optname,  const void *optvalue, uint32_t optlen)
+{
+  int32_t ret = NET_ERROR_FRAMEWORK;
+  bool        forward = false;
+#ifdef NET_MBEDTLS_HOST_SUPPORT
+  /*cstat -MISRAC2012-Rule-11.5 */
+  const char_t *optvalue_string = optvalue;
+  /*cstat +MISRAC2012-Rule-11.5 */
+#endif /* NET_MBEDTLS_HOST_SUPPORT */
+  net_socket_t *pSocket;
+
+  if (!is_valid_socket(sock))
+  {
+    NET_DBG_ERROR("Invalid socket.\n");
+    ret = NET_ERROR_INVALID_SOCKET;
+  }
+  else
+  {
+
+    pSocket = net_socket_get_and_lock(sock);
+    switch (optname)
+    {
+      case NET_SO_BINDTODEVICE:
+      {
+        OPTCHECKTYPE(void *, optlen);
+
+        /*cstat -MISRAC2012-Rule-11.8 -MISRAC2012-Rule-11.5 */
+        pSocket->pnetif = (net_if_handle_t *)optvalue;
+        /*cstat +MISRAC2012-Rule-11.8 +MISRAC2012-Rule-11.5 */
+        ret = NET_OK;
+        break;
+      }
+      case NET_SO_RCVTIMEO:
+      {
+        OPTCHECKTYPE(int32_t, optlen);
+        /*cstat -MISRAC2012-Rule-11.5 */
+        pSocket->read_timeout = *(const int32_t *)optvalue;
+        /*cstat +MISRAC2012-Rule-11.5 */
+
+#ifdef NET_MBEDTLS_HOST_SUPPORT
+        net_mbedtls_set_read_timeout(pSocket);
+#endif /* NET_MBEDTLS_HOST_SUPPORT */
+        forward = true;
+        break;
+      }
+
+      case NET_SO_SNDTIMEO:
+      {
+        OPTCHECKTYPE(int32_t, optlen);
+        /*cstat -MISRAC2012-Rule-11.5 */
+        pSocket->write_timeout = *(const int32_t *)optvalue;
+        /*cstat +MISRAC2012-Rule-11.5 */
+
+        forward = true;
+        break;
+      }
+#ifdef NET_MBEDTLS_HOST_SUPPORT
+      case NET_SO_SECURE:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS device certificate, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            pSocket->is_secure = true;
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+      case NET_SO_TLS_DEV_CERT:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKSTRING(optvalue_string, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS device certificate, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            pSocket->tlsData->tls_dev_cert = optvalue_string;
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+
+      case NET_SO_TLS_DEV_KEY:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKSTRING(optvalue_string, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS device key, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            pSocket->tlsData->tls_dev_key = optvalue_string;
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+
+      case NET_SO_TLS_PASSWORD:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKSTRING(optvalue_string, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS password, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            /*cstat -MISRAC2012-Rule-11.5 */
+            pSocket->tlsData->tls_dev_pwd = (const  uint8_t *) optvalue;
+            /*cstat +MISRAC2012-Rule-11.5 */
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+      case NET_SO_TLS_CA_CERT:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKSTRING(optvalue_string, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS root CA, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            pSocket->tlsData->tls_ca_certs = optvalue_string;
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+
+      case NET_SO_TLS_CA_CRL:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKSTRING(optvalue_string, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS certificate revocation list, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            pSocket->tlsData->tls_ca_crl = optvalue_string;
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+
+      case NET_SO_TLS_SERVER_VERIFICATION:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKTYPE(bool, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS server verification mode, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            /*cstat -MISRAC2012-Rule-11.5 */
+            pSocket->tlsData->tls_srv_verification = (*(const bool *)optvalue > 0) ? true : false;
+            /*cstat +MISRAC2012-Rule-11.5 */
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+
+      case NET_SO_TLS_SERVER_NAME:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKSTRING(optvalue_string, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS server name, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            pSocket->tlsData->tls_srv_name = optvalue_string;
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+
+      /* Set the X.509 security profile */
+      case NET_SO_TLS_CERT_PROF:
+      {
+        if (pSocket->status == SOCKET_CONNECTED)
+        {
+          ret = NET_ERROR_IS_CONNECTED;
+        }
+        else
+        {
+          OPTCHECKTYPE(mbedtls_x509_crt_profile, optlen);
+          if (!net_mbedtls_check_tlsdata(pSocket))
+          {
+            NET_DBG_ERROR("Failed to set TLS X.509 security profile, Allocation failure\n");
+            ret = NET_ERROR_NO_MEMORY;
+          }
+          else
+          {
+            /*cstat -MISRAC2012-Rule-11.5 */
+            pSocket->tlsData->tls_cert_prof = (const mbedtls_x509_crt_profile *) optvalue;
+            /*cstat +MISRAC2012-Rule-11.5 */
+            ret = NET_OK;
+          }
+        }
+        break;
+      }
+#endif /* NET_MBEDTLS_HOST_SUPPORT */
+
+      default:
+        forward = true;
+        break;
+
+    }
+
+    if (true == forward)
+    {
+#if (NET_USE_DEFAULT_INTERFACE == 1)
+      if (pSocket->pnetif == NULL)
+      {
+        pSocket->pnetif = net_if_find(NULL);
+      }
+#endif /* NET_USE_DEFAULT_INTERFACE */
+      if (pSocket->pnetif == NULL)
+      {
+        NET_DBG_ERROR("No physical interface can be bound");
+        ret = NET_ERROR_INTERFACE_FAILURE;
+      }
+      else
+      {
+        if (create_low_level_socket(sock) < 0)
+        {
+          NET_DBG_ERROR("low level socket creation failed.\n");
+          ret = NET_ERROR_SOCKET_FAILURE;
+        }
+        else
+        {
+          if (net_access_control(pSocket->pnetif, NET_ACCESS_SETSOCKOPT, &ret))
+          {
+            UNLOCK_SOCK(sock);
+            ret = pSocket->pnetif->pdrv->psetsockopt(pSocket->ulsocket, level, optname, optvalue, optlen);
+            LOCK_SOCK(sock);
+            if (ret < 0)
+            {
+              NET_DBG_ERROR("Error %ld while setting socket option (optname=%d).\n", ret, optname);
+            }
+          }
+        }
+      }
+    }
+    UNLOCK_SOCK(sock);
+  }
   return ret;
 }
 
@@ -1074,15 +1245,17 @@ END_SETSOCK:
 bool    net_access_control(net_if_handle_t *pnetif, net_access_t func, int32_t *code)
 {
   bool ret = true;
-  if (pnetif->state == NET_STATE_LINK_LOST)
+  if (pnetif->state == NET_STATE_CONNECTION_LOST)
   {
-    /* send ,recv functino return zero , so user application should normaly retry transfer */
+    /* send, recv function return zero, so user application should normally retry transfer */
     ret = false;
     *code = 0;
   }
   switch (func)
   {
     case NET_ACCESS_SOCKET:
+      ret = true;
+
       break;
 
     case NET_ACCESS_BIND:
@@ -1114,6 +1287,10 @@ bool    net_access_control(net_if_handle_t *pnetif, net_access_t func, int32_t *
       *code = 0;
       break;
 
+    case NET_ACCESS_SETSOCKOPT:
+      ret = true;
+      break;
+
     default:
       *code = NET_ERROR_FRAMEWORK;
       break;
@@ -1121,7 +1298,7 @@ bool    net_access_control(net_if_handle_t *pnetif, net_access_t func, int32_t *
   return ret;
 }
 
-
+#endif /* NET_BYPASS_NET_SOCKET */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

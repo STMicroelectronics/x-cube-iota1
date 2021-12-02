@@ -61,7 +61,7 @@ static cJSON* indexation_to_json(indexation_t* index) {
     return NULL;
   }
 
-  if (bin2hex(index->data->data, index->data->len, data_str, data_str_len) == 0) {
+  if (bin_2_hex(index->data->data, index->data->len, data_str, data_str_len) == 0) {
     // add data object
     if (!cJSON_AddStringToObject(payload_obj, JSON_KEY_DATA, data_str)) {
       printf("[%s:%d] creating data failed\n", __func__, __LINE__);
@@ -122,7 +122,7 @@ static cJSON* tx_inputs_to_json(transaction_essence_t* es) {
     }
 
     // add tx id
-    if (bin2hex(elm->tx_id, TRANSACTION_ID_BYTES, tx_id_str, sizeof(tx_id_str)) != 0) {
+    if (bin_2_hex(elm->tx_id, TRANSACTION_ID_BYTES, tx_id_str, sizeof(tx_id_str)) != 0) {
       printf("[%s:%d] tx id convertion failed\n", __func__, __LINE__);
       cJSON_Delete(item);
       cJSON_Delete(input_arr);
@@ -215,7 +215,7 @@ static cJSON* tx_outputs_to_json(transaction_essence_t* es) {
     }
 
     // add address hash
-    if (bin2hex(elm->address, ED25519_ADDRESS_BYTES, addr_str, sizeof(addr_str)) != 0) {
+    if (bin_2_hex(elm->address, ED25519_ADDRESS_BYTES, addr_str, sizeof(addr_str)) != 0) {
       printf("[%s:%d] address convertion failed\n", __func__, __LINE__);
       cJSON_Delete(item);
       cJSON_Delete(output_arr);
@@ -322,7 +322,7 @@ static cJSON* tx_essence_to_json(transaction_essence_t* es) {
 }
 
 // serialize unlocked block array to a JSON object
-static cJSON* tx_blocks_to_json(tx_unlock_blocks_t* blocks) {
+static cJSON* tx_blocks_to_json(unlock_blocks_t* blocks) {
   /*
   [
     {
@@ -356,8 +356,8 @@ static cJSON* tx_blocks_to_json(tx_unlock_blocks_t* blocks) {
     return NULL;
   }
 
-  tx_unlock_blocks_t* elm;
-  DL_FOREACH(blocks, elm) {
+  unlock_blocks_t* elm;
+  LL_FOREACH(blocks, elm) {
     if (elm->type == 0) {  // signature block
       cJSON* sig_block = cJSON_CreateObject();
       if (!sig_block) {
@@ -366,7 +366,7 @@ static cJSON* tx_blocks_to_json(tx_unlock_blocks_t* blocks) {
         return NULL;
       }
 
-      // add type to item, 0 denote as a signature block
+      // add type to item, 0 denote a signature unlocked block
       if (!cJSON_AddNumberToObject(sig_block, JSON_KEY_TYPE, 0)) {
         printf("[%s:%d] add reference type failed\n", __func__, __LINE__);
         cJSON_Delete(sig_block);
@@ -390,7 +390,7 @@ static cJSON* tx_blocks_to_json(tx_unlock_blocks_t* blocks) {
       }
 
       // convert signature to string
-      bin2hex(elm->signature.pub_key, ED_PUBLIC_KEY_BYTES, pub_str, sizeof(pub_str));
+      bin_2_hex(elm->sig_block + 1, ED_PUBLIC_KEY_BYTES, pub_str, sizeof(pub_str));
       if (!cJSON_AddStringToObject(sig_obj, JSON_KEY_PUB_KEY, pub_str)) {
         printf("[%s:%d] add public key failed\n", __func__, __LINE__);
         cJSON_Delete(sig_obj);
@@ -398,7 +398,7 @@ static cJSON* tx_blocks_to_json(tx_unlock_blocks_t* blocks) {
         return NULL;
       }
 
-      bin2hex(elm->signature.signature, ED_PRIVATE_KEY_BYTES, sig_str, sizeof(sig_str));
+      bin_2_hex(elm->sig_block + 1 + ED_PUBLIC_KEY_BYTES, ED_PRIVATE_KEY_BYTES, sig_str, sizeof(sig_str));
       if (!cJSON_AddStringToObject(sig_obj, JSON_KEY_SIG, sig_str)) {
         printf("[%s:%d] add signature failed\n", __func__, __LINE__);
         cJSON_Delete(sig_obj);
@@ -551,9 +551,11 @@ char* message_to_json(core_message_t* msg) {
 
   cJSON_AddItemToObject(msg_obj, JSON_KEY_PARENT_IDS, parents);
   byte_t* p = NULL;
-  while ((p = (byte_t*)utarray_next(msg->parents, p))) {
-    bin2hex(p, IOTA_MESSAGE_ID_BYTES, tmp_id_str, sizeof(tmp_id_str));
+  p = (byte_t*)utarray_next(msg->parents, p);
+  while (p != NULL) {
+    bin_2_hex(p, IOTA_MESSAGE_ID_BYTES, tmp_id_str, sizeof(tmp_id_str));
     cJSON_AddItemToArray(parents, cJSON_CreateString(tmp_id_str));
+    p = (byte_t*)utarray_next(msg->parents, p);
   }
 
   // add payload

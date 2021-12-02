@@ -9,6 +9,28 @@
 #define UTXO_OUTPUT_MIN_COUNT 0
 #define UTXO_OUTPUT_MAX_COUNT 126
 
+outputs_ht *utxo_outputs_new(void) {
+  return NULL;
+}
+
+outputs_ht *utxo_outputs_find_by_addr(outputs_ht **ht, byte_t addr[]) {
+  outputs_ht *elm = NULL;
+  HASH_FIND(hh, *ht, addr, ED25519_ADDRESS_BYTES, elm);
+  return elm;
+}
+
+uint16_t utxo_outputs_count(outputs_ht **ht) {
+  return (uint16_t)HASH_COUNT(*ht);
+}
+
+void utxo_outputs_free(outputs_ht **ht) {
+  outputs_ht *curr_elm, *tmp;
+  HASH_ITER(hh, *ht, curr_elm, tmp) {
+    HASH_DEL(*ht, curr_elm);
+    free(curr_elm);
+  }
+}
+
 int utxo_outputs_add(outputs_ht **ht, output_type_t type, byte_t addr[], uint64_t amount) {
   if (type == OUTPUT_DUST_ALLOWANCE && amount < 1000000) {
     printf("[%s:%d] dust allowance amount must at least 1Mi\n", __func__, __LINE__);

@@ -7,12 +7,32 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "client_service.h"
-#include "types.h"
+#include "client/client_service.h"
+#include "core/types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup GET_HEALTH Get Health
+ * @{
+ */
+
+/** @defgroup GET_HEALTH_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Returns the health of the node.
@@ -25,6 +45,26 @@ extern "C" {
  * @return int 0 on success
  */
 int get_health(iota_client_conf_t const *conf, bool *health);
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

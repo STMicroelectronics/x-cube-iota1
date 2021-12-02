@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "json_utils.h"
-#include "get_node_info.h"
-#include "http_lib.h"
-#include "iota_str.h"
+#include "client/api/json_utils.h"
+#include "client/api/v1/get_node_info.h"
+#include "client/network/http_lib.h"
+#include "core/utils/iota_str.h"
 
 res_node_info_t *res_node_info_new(void) {
   res_node_info_t *res = malloc(sizeof(res_node_info_t));
@@ -44,7 +44,7 @@ char *get_node_features_at(res_node_info_t *info, int idx) {
   }
 
   int len = utarray_len(info->u.output_node_info->features);
-  if (idx < 0 || idx >= len) {
+  if (idx >= len) {
     printf("[%s:%d]: get_features failed (invalid index)\n", __func__, __LINE__);
     return NULL;
   }
@@ -62,75 +62,60 @@ size_t get_node_features_num(res_node_info_t *info) {
 }
 
 int get_node_info(iota_client_conf_t const *conf, res_node_info_t *res) {
-  int ret = 0;
-  char const *const cmd_info = "api/v1/info";
-  //byte_buf_t *http_res = NULL;
-  http_handle_t http_handle;
+  int ret = -1;
+  char const *const cmd_info = "/api/v1/info";
+  http_context_t http_ctx;
   http_response_t http_res;
-  uint32_t http_resp_status;
+  memset(&http_res, 0, sizeof(http_response_t));
 
   if (conf == NULL || res == NULL) {
     printf("[%s:%d]: get_node_info failed (null parameter)\n", __func__, __LINE__);
     return -1;
   }
 
-  // compose restful api command
-  iota_str_t *cmd = iota_str_new(conf->url);
-  if (cmd == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    return -1;
-  }
-
-  if (iota_str_append(cmd, cmd_info)) {
-    printf("[%s:%d]: string append failed\n", __func__, __LINE__);
-    iota_str_destroy(cmd);
-    return -1;
-  }
-
-  // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    ret = -1;
-    goto done;
-  }
-
+  // allocate response  
   http_res.body = byte_buf_new();
   if (http_res.body == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    ret = -1;
+    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
     goto done;
   }
   http_res.code = 0;
 
-  // send request via http client
-  if ( http_read(http_handle,
-                 &http_res,
-                 "Content-Type: application/json",
-                 NULL) < 0 ) {
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd_info;
+  http_ctx.use_tls = conf->use_tls;
+  http_ctx.port = conf->port;
 
+  // http open
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
+    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+    goto done;
+  }
+
+  // send request via http client
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  NULL);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-    ret = -1;
+  } else {
+    byte_buf2str(http_res.body);
+    // json deserialization
+    ret = deser_node_info((char const *)http_res.body->data, res);
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
   }
 
-  if (http_res.code == 200 && ret == 0) {
-    byte_buf2str(http_res.body);
-    
-    // json deserialization
-    ret = deser_node_info((char const *)http_res.body->data, res);
-  } else {
-    ret = -1;
-  }
-
 done:
   // cleanup command
-  iota_str_destroy(cmd);
   byte_buf_free(http_res.body);
 
   return ret;
@@ -138,8 +123,14 @@ done:
 
 int deser_node_info(char const *const j_str, res_node_info_t *res) {
   int ret = 0;
+  if (j_str == NULL || res == NULL) {
+    printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
+    return -1;
+  }
+
   cJSON *json_obj = cJSON_Parse(j_str);
   if (json_obj == NULL) {
+    printf("[%s:%d] NULL json object\n", __func__, __LINE__);
     return -1;
   }
 
@@ -160,6 +151,7 @@ int deser_node_info(char const *const j_str, res_node_info_t *res) {
         ret = -1;
         goto end;
       }
+      memset(res->u.output_node_info, 0, sizeof(get_node_info_t));
       // gets name
       if ((ret = json_get_string(data_obj, JSON_KEY_NAME, res->u.output_node_info->name, sizeof(res->u.output_node_info->name))) != 0) {
         printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_NAME);
@@ -211,6 +203,30 @@ int deser_node_info(char const *const j_str, res_node_info_t *res) {
       // gets pruningIndex
       if ((ret = json_get_uint64(data_obj, JSON_KEY_PRUNING_IDX, &res->u.output_node_info->pruning_milestone_index)) != 0) {
         printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_PRUNING_IDX);
+        goto end;
+      }
+
+      // gets message per second
+      if ((ret = json_get_float(data_obj, JSON_KEY_MPS, &res->u.output_node_info->msg_pre_sec)) != 0) {
+        printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_MPS);
+        goto end;
+      }
+
+      // gets referenced message per second
+      if ((ret = json_get_float(data_obj, JSON_KEY_REF_MPS, &res->u.output_node_info->referenced_msg_pre_sec)) != 0) {
+        printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_REF_MPS);
+        goto end;
+      }
+
+      // gets referenced rate
+      if ((ret = json_get_float(data_obj, JSON_KEY_REF_RATE, &res->u.output_node_info->referenced_rate)) != 0) {
+        printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_REF_RATE);
+        goto end;
+      }
+
+      // gets latest milestone timestamp
+      if ((ret = json_get_uint64(data_obj, JSON_KEY_LMT, &res->u.output_node_info->latest_milestone_timestamp)) != 0) {
+        printf("[%s:%d]: gets %s json string failed\n", __func__, __LINE__, JSON_KEY_LMT);
         goto end;
       }
 

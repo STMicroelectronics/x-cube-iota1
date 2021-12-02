@@ -123,8 +123,10 @@ json_error_t utarray_to_json_string_array(UT_array const* const ut, cJSON* const
 
   cJSON_AddItemToObject(json_obj, key, array_obj);
 
-  while ((p = (char**)utarray_next(ut, p))) {
+  p = (char**)utarray_next(ut, p);
+  while (p != NULL) {
     cJSON_AddItemToArray(array_obj, cJSON_CreateString(*p));
+    p = (char**)utarray_next(ut, p);
   }
   return JSON_OK;
 }
@@ -252,6 +254,34 @@ json_error_t json_get_uint64(cJSON const* const obj, char const key[], uint64_t*
   if (cJSON_IsNumber(json_value)) {
     if (json_value->valueint >= 0) {
       *num = (uint64_t)json_value->valuedouble;
+    } else {
+      printf("[%s:%d] %s is not an unsigned number\n", __func__, __LINE__, key);
+      return JSON_NOT_UNSIGNED;
+    }
+  } else {
+    printf("[%s:%d] %s is not an number\n", __func__, __LINE__, key);
+    return JSON_NOT_NUMBER;
+  }
+
+  return JSON_OK;
+}
+
+json_error_t json_get_float(cJSON const* const obj, char const key[], float* const f) {
+  if (obj == NULL || key == NULL || f == NULL) {
+    // invalid parameters
+    printf("[%s:%d] invalid parameters\n", __func__, __LINE__);
+    return JSON_INVALID_PARAMS;
+  }
+
+  cJSON* json_value = cJSON_GetObjectItemCaseSensitive(obj, key);
+  if (json_value == NULL) {
+    printf("[%s:%d] JSON key not found: %s\n", __func__, __LINE__, key);
+    return JSON_KEY_NOT_FOUND;
+  }
+
+  if (cJSON_IsNumber(json_value)) {
+    if (json_value->valueint >= 0) {
+      *f = (float)json_value->valuedouble;
     } else {
       printf("[%s:%d] %s is not an unsigned number\n", __func__, __LINE__, key);
       return JSON_NOT_UNSIGNED;

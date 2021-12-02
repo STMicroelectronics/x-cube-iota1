@@ -21,24 +21,6 @@ SODIUM_EXPORT
 void sodium_misuse(void)
             __attribute__ ((noreturn));
 
-/* IOTA -- Port to CubeIDE */
-//#ifdef __GNUC__
-#if (defined(__GNUC__) && !defined(__CC_ARM))
-__attribute__((weak)) void
-__aeabi_assert(char const *test, char const *file, int line)
-{
-  (void)test;
-  (void)file;
-  (void)line;
-}
-
-__attribute__((weak)) int
-volatile *__aeabi_errno_addr(void)
-{
-  return NULL;
-}
-#endif
-
 #ifdef __cplusplus
 }
 #endif

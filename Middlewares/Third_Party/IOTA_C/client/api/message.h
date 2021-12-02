@@ -7,28 +7,57 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "types.h"
-#include "byte_buffer.h"
+#include "core/types.h"
+#include "core/utils/byte_buffer.h"
 #include "utarray.h"
 
-#define API_MSG_ID_HEX_BYTES 64
-#define API_TX_ID_HEX_BYTES 64
-#define API_ADDR_HEX_BYTES 64
-#define API_PUB_KEY_HEX_BYTES 64
-#define API_SIGNATURE_HEX_BYTES 128
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CLIENT
+ * @{
+ */
+
+/** @addtogroup API
+ * @{
+ */
+
+/** @defgroup MESSAGE Message
+ * @{
+ */
+
+/** @defgroup MESSAGE_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
+
+#define API_MSG_ID_HEX_STR_LEN (64 + 1)
+#define API_TX_ID_HEX_STR_LEN (64 + 1)
+#define API_ADDR_HEX_STR_LEN (64 + 1)
+#define API_PUB_KEY_HEX_STR_LEN (64 + 1)
+#define API_SIGNATURE_HEX_STR_LEN (128 + 1)
+#define API_SIGNATURE_BLOCK_STR_LEN (1 + API_PUB_KEY_HEX_STR_LEN + API_SIGNATURE_HEX_STR_LEN)
+
+/**
+ * @}
+ */
+
+/** @defgroup MESSAGE_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 typedef enum {
   MSG_PAYLOAD_TRANSACTION = 0,
   MSG_PAYLOAD_MILESTONE,
   MSG_PAYLOAD_INDEXATION,
-  MSG_PAYLOAD_UNKNOW = -1,
+  MSG_PAYLOAD_UNKNOW
 } msg_payload_type_t;
 
 // TODO update mileestone structure: https://github.com/iotaledger/protocol-rfcs/pull/19
 typedef struct {
   uint64_t timestamp;
   uint32_t index;
-  char inclusion_merkle_proof[64];  // hex string with 64 length
+  char inclusion_merkle_proof[64 + 1];  // hex string with 64 length
   UT_array *signatures;
 } payload_milestone_t;
 
@@ -39,27 +68,29 @@ typedef struct {
 
 typedef struct {
   uint32_t tx_output_index;
-  char tx_id[API_TX_ID_HEX_BYTES];
+  char tx_id[API_TX_ID_HEX_STR_LEN];
 } payload_tx_input_t;
 
 typedef struct {
   uint64_t amount;
-  char address[API_ADDR_HEX_BYTES];
+  char address[API_ADDR_HEX_STR_LEN];
 } payload_tx_output_t;
 
 typedef struct {
-  char pub_key[API_PUB_KEY_HEX_BYTES];
-  char signature[API_SIGNATURE_HEX_BYTES];
+  uint8_t block_type;  ///< 0 denotes a Signature Unlock Block, 1 denotes a Reference Unlock Block.
+  uint16_t reference;  ///< Represents the index of a pervious unlock block
+  char *sig_block;     ///< ed25519 public key + signature in hex string
 } payload_unlock_block_t;
 
-typedef UT_array utxo_inputs_t;
-typedef UT_array utxo_outputs_t;
-typedef UT_array unlock_blocks_t;
+typedef UT_array api_utxo_inputs_t;
+typedef UT_array api_utxo_outputs_t;
+typedef UT_array api_unlock_blocks_t;
 
 typedef struct {
-  utxo_inputs_t *intputs;
-  utxo_outputs_t *outputs;
-  unlock_blocks_t *unlock_blocks;
+  api_utxo_inputs_t *inputs;
+  api_utxo_outputs_t *outputs;
+  api_unlock_blocks_t *unlock_blocks;
+  payload_t type;
   void *payload;
 } payload_tx_t;
 
@@ -75,16 +106,24 @@ typedef struct {
   void *payload;             ///< NULL if no payload
 } message_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup MESSAGE_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocate a transaction payload object
  *
  * @return payload_tx_t*
  */
-payload_tx_t *payload_tx_new();
+payload_tx_t *payload_tx_new(void);
 
 /**
  * @brief Free a transaction payload object
@@ -98,7 +137,7 @@ void payload_tx_free(payload_tx_t *tx);
  *
  * @return payload_milestone_t*
  */
-payload_milestone_t *payload_milestone_new();
+payload_milestone_t *payload_milestone_new(void);
 
 /**
  * @brief Free a milestone payload object
@@ -112,7 +151,7 @@ void payload_milestone_free(payload_milestone_t *ms);
  *
  * @return payload_index_t*
  */
-payload_index_t *payload_index_new();
+payload_index_t *payload_index_new(void);
 
 /**
  * @brief Free an indexcation payload object
@@ -126,7 +165,7 @@ void payload_index_free(payload_index_t *idx);
  *
  * @return message_t*
  */
-message_t *api_message_new();
+message_t *api_message_new(void);
 
 /**
  * @brief Free a message object
@@ -238,8 +277,56 @@ char *payload_tx_blocks_public_key(payload_tx_t const *const tx, size_t index);
  */
 char *payload_tx_blocks_signature(payload_tx_t const *const tx, size_t index);
 
+/**
+ * @brief Add a signature block into the unlock blocks
+ *
+ * @param[in] tx A transaction payload object
+ * @param[in] sig A string of signature block
+ * @param[in] sig_len The length of signature block
+ * @return int 0 on success
+ */
+int payload_tx_add_sig_block(payload_tx_t const *const tx, char const sig[], size_t sig_len);
+
+/**
+ * @brief Add a reference into the unlock blocks
+ *
+ * @param[in] tx A transaction payload object
+ * @param[in] ref The index of reference
+ * @return int 0 on success
+ */
+int payload_tx_add_ref_block(payload_tx_t const *const tx, uint16_t ref);
+
+/**
+ * @brief Get the reference by a given index of the unlock block
+ *
+ * @param[in] tx A transaction payload object
+ * @param[in] index The index of unlock block
+ * @return uint16_t 65536(UINT16_MAX) on fails
+ */
+uint16_t payload_tx_blocks_reference(payload_tx_t const *const tx, size_t index);
+
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

@@ -7,17 +7,49 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "types.h"
+#include "core/types.h"
 
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @addtogroup CORE_UTILS
+ * @{
+ */
+
+/** @defgroup BYTEBUFFER Byte Buffer
+ * @{
+ */
+
+/** @defgroup BYTEBUFFER_EXPORTED_TYPES Exported Types
+ * @{
+ */
+
+/**
+ * @brief byte buffer object
+ *
+ */
 typedef struct {
-  size_t len;
-  size_t cap;
-  byte_t* data;
+  size_t len;    ///< the length of data
+  size_t cap;    ///< the capacity of this object
+  byte_t* data;  ///< a pointer to the data
 } byte_buf_t;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+  
+/** @defgroup BYTEBUFFER_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Allocates data buffer
@@ -88,7 +120,7 @@ byte_buf_t* byte_buf_clonen(byte_buf_t* buf, size_t length);
  * @param[in] buf A byte buffer
  * @return byte_buf_t*
  */
-static byte_buf_t* byte_buf_clone(byte_buf_t* buf) { return byte_buf_clonen(buf, buf->len); };
+byte_buf_t* byte_buf_clone(byte_buf_t* buf);
 
 /**
  * @brief Changes the buffer capacity
@@ -141,7 +173,7 @@ int hex2string(char const str[], uint8_t array[], size_t arr_len);
  * @param[in] hex_len The length of hex buffer
  * @return int 0 on success
  */
-int string2hex(char str[], byte_t hex[], size_t hex_len);
+int string2hex(char const str[], byte_t hex[], size_t hex_len);
 
 /**
  * @brief Converts hex string to a byte array
@@ -152,7 +184,7 @@ int string2hex(char str[], byte_t hex[], size_t hex_len);
  * @param[in] bin_len The length of byte array
  * @return int 0 on success
  */
-int hex2bin(char const str[], size_t str_len, byte_t bin[], size_t bin_len);
+int hex_2_bin(char const str[], size_t str_len, byte_t bin[], size_t bin_len);
 
 /**
  * @brief Converts a byte array to hex string
@@ -163,10 +195,30 @@ int hex2bin(char const str[], size_t str_len, byte_t bin[], size_t bin_len);
  * @param[in] buf_len The length of the buffer
  * @return int 0 on success
  */
-int bin2hex(byte_t const bin[], size_t bin_len, char str_buf[], size_t buf_len);
+int bin_2_hex(byte_t const bin[], size_t bin_len, char str_buf[], size_t buf_len);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

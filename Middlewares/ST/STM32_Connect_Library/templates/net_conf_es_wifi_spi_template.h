@@ -24,17 +24,18 @@
 extern "C" {
 #endif
 
-
-#include "net_conf_template.h"
-#ifdef GENERATOR_WAKAAMACLIENT_CLOUD
-#undef NET_MBEDTLS_HOST_SUPPORT
-#endif
-
 int32_t wifi_probe(void **ll_drv_obj);
 void    SPI_WIFI_ISR(void);
 
+#ifndef GENERATOR_WAKAAMACLIENT_CLOUD
+#define NET_MBEDTLS_HOST_SUPPORT
+/* to use Inventek Wifi native TLS */
+/* #define NET_MBEDTLS_WIFI_MODULE_SUPPORT */
+#endif /* GENERATOR_WAKAAMACLIENT_CLOUD */
+/*#define NET_ALLOC_DEBUG     */
+/*#define NET_ALLOC_DEBUG_TREE  */
 
-
+#include "net_conf_template.h"
 
 
 

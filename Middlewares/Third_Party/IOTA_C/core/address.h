@@ -6,22 +6,55 @@
 
 #include <stdbool.h>
 
-#include "seed.h"
-#include "types.h"
-#include "iota_crypto.h"
+#include "core/seed.h"
+#include "core/types.h"
+#include "crypto/iota_crypto.h"
+
+/** @addtogroup IOTA_C
+ * @{
+ */
+
+/** @addtogroup CORE
+ * @{
+ */
+
+/** @defgroup ADDRESS Address
+ * @{
+ */
+
+/** @defgroup ADDRESS_EXPORTED_CONSTANTS Exported Constants
+ * @{
+ */
 
 // the length of an address
 #define IOTA_ADDRESS_BYTES (1 + ED_PUBLIC_KEY_BYTES)  // address version + address data
 #define ED25519_ADDRESS_BYTES ED_PUBLIC_KEY_BYTES     // ed25519 address schema
 // the hex address is used in node API, it's a string of 64 characters, the version field is excluded
 #define IOTA_ADDRESS_HEX_BYTES (ED25519_ADDRESS_BYTES * 2)
+#define BECH32_ADDRESS_LEN 65  // the length of bech32 string
+
+/**
+ * @}
+ */
+
+/** @defgroup ADDRESS_EXPORTED_TYPES Exported Types
+ * @{
+ */
 
 // address signature version
 typedef enum { ADDRESS_VER_ED25519 = 0, ADDRESS_VER_UNKNOW = 1 } address_version_t;
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @defgroup ADDRESS_EXPORTED_FUNCTIONS Exported Functions
+ * @{
+ */
 
 /**
  * @brief Get address from ed25519 public key
@@ -36,21 +69,23 @@ int address_from_ed25519_pub(byte_t const pub_key[], byte_t addr[]);
  * @brief Get Ed25519 keypair from given seed and path
  *
  * @param[in] seed A seed
+ * @param[in] seed_len The length of seed
  * @param[in] path A string of path, ex: "m/0H/1H/2H" or "m/0'/1'/2'"
  * @param[out] keypair The ed25519 keypair
  * @return int 0 on success
  */
-int address_keypair_from_path(byte_t seed[], char path[], iota_keypair_t* keypair);
+int address_keypair_from_path(byte_t seed[], size_t seed_len, char path[], iota_keypair_t* keypair);
 
 /**
  * @brief Get address from seed and slip10 path
  *
  * @param[in] seed An IOTA seed
+ * @param[in] seed_len The length of seed
  * @param[in] path A string of path, ex: "m/0H/1H/2H" or "m/0'/1'/2'"
  * @param[out] out_addr
  * @return int 0 on success
  */
-int address_from_path(byte_t seed[], char path[], byte_t out_addr[]);
+int address_from_path(byte_t seed[], size_t seed_len, char path[], byte_t out_addr[]);
 
 /**
  * @brief Get an IOTA address from a given bech32 string
@@ -74,8 +109,35 @@ int address_from_bech32(char const* hrp, char const* bech32_str, byte_t out_addr
  */
 int address_2_bech32(byte_t const addr[], char const* hrp, char* bech32_addr);
 
+/**
+ * @brief Convert Bech32 address to ed25519 in hex string form
+ *
+ * @param[in] hrp The HRP prefix
+ * @param[in] bech32 A Bech32 address string
+ * @param[out] hex A buffer holds output
+ * @param[in] hex_len the length of the buffer, should bigger than 65 bytes
+ * @return int 0 on success
+ */
+int address_bech32_to_hex(char const hrp[], char const bech32[], char hex[], size_t hex_len);
+
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #endif

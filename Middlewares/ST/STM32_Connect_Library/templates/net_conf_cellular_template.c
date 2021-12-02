@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    net_conf.c
   * @author  MCD Application Team
-  * @brief   Implement wifi_probe() called to initialize the Wifi low level driver
+  * @brief   Implement cellular_probe() called to initialize the Cellular low level driver
   ******************************************************************************
   * @attention
   *
@@ -54,7 +54,7 @@ const   mbedtls_x509_crt_profile mbedtls_x509_crt_amazon_suite =
 #endif /* MBEDTLS_ECP_C */
   2048
 };
-const unsigned int32_t net_tls_sizeof_suite_structure =   sizeof(mbedtls_x509_crt_profile);
+const int32_t net_tls_sizeof_suite_structure = sizeof(mbedtls_x509_crt_profile);
 const void    *net_tls_user_suite0 = (void *) &mbedtls_x509_crt_amazon_suite;
 
 #endif /* GENERATOR_AWS_CLOUD */

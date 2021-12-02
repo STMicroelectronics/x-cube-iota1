@@ -1,20 +1,27 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-//#include <arpa/inet.h>
+// Reference: https://github.com/satoshilabs/slips/blob/master/slip-0010.md
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "iota_str.h"
-#include "slip10.h"
-#include "iota_crypto.h"
+#include "core/utils/iota_str.h"
+#include "core/utils/slip10.h"
+#include "crypto/iota_crypto.h"
+
+#ifndef htonl
+#if ((__BYTE_ORDER__) == (__ORDER_LITTLE_ENDIAN__))
 
 #define htonl(x) ( ((x)<<24 & 0xFF000000UL) | \
                    ((x)<< 8 & 0x00FF0000UL) | \
                    ((x)>> 8 & 0x0000FF00UL) | \
                    ((x)>>24 & 0x000000FFUL) )
+#else
+#define htonl(x) (x)
+#endif
+#endif
 
 // creates a new master private extended key for the curve from a seed.
 static void master_key_generation(byte_t seed[], size_t seed_len, slip10_curve_t curve, slip10_key_t* key) {
@@ -121,7 +128,7 @@ int slip10_parse_path(char str[], bip32_path_t* path) {
     token = strtok(NULL, "/");
     path->len += 1;
 
-    if (path->len >= MAX_PIB32_PATH) {
+    if (path->len >= MAX_BIP32_PATH) {
       // path too long
       ret = -3;
       goto end;

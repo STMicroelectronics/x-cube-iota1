@@ -4,16 +4,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "json_utils.h"
-#include "get_balance.h"
-#include "response_error.h"
-#include "http_lib.h"
-#include "iota_str.h"
+#include "client/api/json_utils.h"
+#include "client/api/v1/get_balance.h"
+#include "client/api/v1/response_error.h"
+#include "client/network/http_lib.h"
+#include "core/utils/iota_str.h"
 
-res_balance_t *res_balance_new() {
+res_balance_t *res_balance_new(void) {
   res_balance_t *res = malloc(sizeof(res_balance_t));
   if (res) {
     res->is_error = false;
+    res->u.error = NULL;
+    res->u.output_balance = NULL;
     return res;
   }
   return NULL;
@@ -24,7 +26,9 @@ void res_balance_free(res_balance_t *res) {
     if (res->is_error) {
       res_err_free(res->u.error);
     } else {
-      free(res->u.output_balance);
+      if (res->u.output_balance) {
+        free(res->u.output_balance);
+      }
     }
     free(res);
   }
@@ -76,6 +80,18 @@ int deser_balance_info(char const *const j_str, res_balance_t *res) {
           printf("[%s:%d]: gets %s json balance failed\n", __func__, __LINE__, JSON_KEY_BALANCE);
           goto end;
         }
+        
+        // gets dust allowance
+        if ((ret = json_get_boolean(data_obj, JSON_KEY_DUST_ALLOWED, &res->u.output_balance->dust_allowed)) != 0) {
+          printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_DUST_ALLOWED);
+          goto end;
+        }
+        
+        // gets ledger index
+        if ((ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output_balance->ledger_idx)) != 0) {
+          printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);
+          goto end;
+        }
       }
     }
   }
@@ -85,12 +101,11 @@ end:
   return ret;
 }
 
-int get_balance(iota_client_conf_t const *conf, char const addr[], res_balance_t *res) {
+int get_balance(iota_client_conf_t const *conf, bool is_bech32, char const addr[], res_balance_t *res) {
   int ret = -1;
-  char const *const cmd_balance = "api/v1/addresses/ed25519/";
+  http_context_t http_ctx;
   http_response_t http_res;
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
+  memset(&http_res, 0, sizeof(http_response_t));
 
   if (addr == NULL || res == NULL || conf == NULL) {
     printf("[%s:%d]: get_balance failed (null parameter)\n", __func__, __LINE__);
@@ -103,42 +118,48 @@ int get_balance(iota_client_conf_t const *conf, char const addr[], res_balance_t
   }
 
   // compose restful api command
-  iota_str_t *cmd = iota_str_new(conf->url);
-  if (cmd == NULL) {
-    printf("[%s:%d] OOM\n", __func__, __LINE__);
-    return -1;
+  char cmd_buffer[91] = {0};  // 91 = max size of api path(26) + IOTA_ADDRESS_HEX_BYTES(64) + 1
+  int snprintf_ret;
+
+  if (is_bech32) {
+    snprintf_ret = snprintf(cmd_buffer, sizeof(cmd_buffer), "/api/v1/addresses/%s", addr);
+  } else {
+    snprintf_ret = snprintf(cmd_buffer, sizeof(cmd_buffer), "/api/v1/addresses/ed25519/%s", addr);
   }
 
-  if (iota_str_append(cmd, cmd_balance)) {
-    printf("[%s:%d]: cmd_balance append failed\n", __func__, __LINE__);
+  // check if data stored is not more than buffer length
+  if (snprintf_ret > (sizeof(cmd_buffer) - 1)) {
+    printf("[%s:%d]: http cmd buffer overflow\n", __func__, __LINE__);
     goto done;
   }
 
-  if (iota_str_append(cmd, addr)) {
-    printf("[%s:%d]: addr append failed\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
+  // allocate response
   http_res.body = byte_buf_new();
   if (http_res.body == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    ret = -1;
+    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
     goto done;
   }
   http_res.code = 0;
 
-  // send request via http client
-  if ( http_read(http_handle,
-                 &http_res,
-                 "Content-Type: application/json",
-                 NULL) < 0 ) {
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = cmd_buffer, 
+  http_ctx.use_tls = conf->use_tls;
+  http_ctx.port = conf->port;
+  
+  // http open
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
+    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+    goto done;
+  }
 
+  // send request via http client
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  NULL);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
   } else {
     byte_buf2str(http_res.body);
@@ -147,7 +168,7 @@ int get_balance(iota_client_conf_t const *conf, char const addr[], res_balance_t
   }
 
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
@@ -155,7 +176,6 @@ int get_balance(iota_client_conf_t const *conf, char const addr[], res_balance_t
 
 done:
   // cleanup command
-  iota_str_destroy(cmd);
   byte_buf_free(http_res.body);
 
   return ret;

@@ -33,15 +33,11 @@ extern "C" {
 
 /**
  * Callbacks for handling response data.
- *  realloc_scratch - reallocate memory, cannot fail. There will only
- *                    be one scratch buffer. Implemnentation may take
- *                    advantage of this fact.
  *  body - handle HTTP response body data
  *  header - handle an HTTP header key/value pair
  *  code - handle the HTTP status code for the response
  */
 typedef struct {
-    void* (*realloc_scratch)(void* opaque, void* ptr, int size);
     void (*body)(void* opaque, const char* data, int size);
     void (*header)(void* opaque, const char* key, int nkey, const char* value, int nvalue);
     void (*code)(void* opqaue, int code);
@@ -50,7 +46,7 @@ typedef struct {
 typedef struct {
     http_funcs_t funcs;
     void *opaque;
-    char *scratch;
+    char scratch[128];
     int code;
     int parsestate;
     int contentlength;
@@ -70,7 +66,7 @@ void http_parser_init(http_roundtripper_t* rt, http_funcs_t, void* opaque);
 /**
  * Frees any scratch memory allocated during parsing.
  */
-void http_parser_free(http_roundtripper_t* rt);
+void http_parser_reset(http_roundtripper_t* rt);
 
 /**
  * Parses a block of HTTP response data. Returns zero if the parser reached the

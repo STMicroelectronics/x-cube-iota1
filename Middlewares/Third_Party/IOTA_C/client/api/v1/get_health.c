@@ -4,56 +4,50 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "get_health.h"
-#include "http_lib.h"
-#include "iota_str.h"
+#include "client/api/v1/get_health.h"
+#include "client/network/http_lib.h"
+#include "core/utils/iota_str.h"
 
 int get_health(iota_client_conf_t const *conf, bool *health) {
   int ret = -1;
-  char const *const cmd_info = "health";
+  http_context_t http_ctx;
   http_response_t http_res;
-  http_handle_t http_handle;
-  uint32_t http_resp_status;
+  memset(&http_res, 0, sizeof(http_response_t));
 
-  // compose restful api command
-  iota_str_t *cmd = iota_str_new(conf->url);
-  if (cmd == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    return -1;
-  }
-
-  if (iota_str_append(cmd, cmd_info)) {
-    printf("[%s:%d]: string append failed\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // http open
-  if (http_open(&http_handle, cmd->buf) != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
+  // allocate response
   http_res.body = byte_buf_new();
   if (http_res.body == NULL) {
-    printf("[%s:%d]: OOM\n", __func__, __LINE__);
-    ret = -1;
+    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
     goto done;
   }
   http_res.code = 0;
 
-  // send request via http client
-  if ( http_read(http_handle,
-                 &http_res,
-                 "Content-Type: application/json",
-                 NULL) < 0 ) {
+  // http client configuration
+  http_ctx.host = conf->host;
+  http_ctx.path = "/health";
+  http_ctx.use_tls = conf->use_tls;
+  http_ctx.port = conf->port;
 
+  // http open
+  ret = http_open(&http_ctx);
+  if (ret != HTTP_OK) {
+    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+    goto done;
+  }
+
+  // send request via http client
+  ret = http_read(&http_ctx,
+                  &http_res,
+                  "Content-Type: application/json",
+                  NULL);
+  if (ret < 0) {
     printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
   } else {
     ret = 0;
   }
   
   // http close
-  if (http_close(http_handle) != HTTP_OK )
+  if (http_close(&http_ctx) != HTTP_OK )
   {
     printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
     ret = -1;
@@ -67,7 +61,6 @@ int get_health(iota_client_conf_t const *conf, bool *health) {
 
 done:
   // cleanup command
-  iota_str_destroy(cmd);
   byte_buf_free(http_res.body);
 
   return ret;

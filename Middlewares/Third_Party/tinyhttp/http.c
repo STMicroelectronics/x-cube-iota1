@@ -48,7 +48,6 @@ static void grow_scratch(http_roundtripper_t* rt, int size)
     if (nsize < size)
         nsize = size;
 
-	rt->scratch = (char*)rt->funcs.realloc_scratch(rt->opaque, rt->scratch, nsize);
     rt->nscratch = nsize;
 }
 
@@ -70,7 +69,7 @@ enum http_roundtripper_state {
 void http_parser_init(http_roundtripper_t* rt, http_funcs_t funcs, void* opaque)
 {
     rt->funcs = funcs;
-    rt->scratch = 0;
+    memset(rt->scratch, 0, sizeof(rt->scratch));
     rt->opaque = opaque;
     rt->code = 0;
     rt->parsestate = 0;
@@ -82,12 +81,9 @@ void http_parser_init(http_roundtripper_t* rt, http_funcs_t funcs, void* opaque)
     rt->chunked = 0;
 }
 
-void http_parser_free(http_roundtripper_t* rt)
+void http_parser_reset(http_roundtripper_t* rt)
 {
-    if (rt->scratch) {
-        rt->funcs.realloc_scratch(rt->opaque, rt->scratch, 0);
-        rt->scratch = 0;
-    }
+    memset(rt->scratch, 0, sizeof(rt->scratch));
 }
 
 int http_parser_data(http_roundtripper_t* rt, const char* data, int size, int* read)
@@ -208,10 +204,7 @@ int http_parser_data(http_roundtripper_t* rt, const char* data, int size, int* r
         }
 
         if (rt->state == http_roundtripper_error || rt->state == http_roundtripper_close) {
-            if (rt->scratch) {
-                rt->funcs.realloc_scratch(rt->opaque, rt->scratch, 0);
-                rt->scratch = 0;
-            }
+            http_parser_reset(rt);
             *read = initial_size - size;
             return 0;
         }
