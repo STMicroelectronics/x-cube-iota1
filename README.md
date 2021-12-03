@@ -1,6 +1,6 @@
 # X-CUBE-IOTA1 Firmware Package
 The X-CUBE-IOTA1 is an expansion software package for STM32Cube.
-The software runs on the STM32 and includes includes the middleware 
+The software runs on the STM32 and includes the middleware 
 for enabling the IOTA Distributed Ledger Technology. The expansion 
 is built on STM32Cube software technology to ease portability across 
 different STM32 microcontrollers. The software comes with sample 
