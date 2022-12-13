@@ -14,6 +14,11 @@
   @endverbatim
 
 =======
+### 01-December-2022 ###
+========================
+   + Update for porting to B-U585I-IOT02A
+
+=======
 ### 10-March-2021 ###
 ========================
    + libsodium v1.0.18 (https://download.libsodium.org/libsodium/releases/)

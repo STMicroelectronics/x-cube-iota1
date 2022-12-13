@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "core/types.h"
+
 #define BIP39_SEED_BYTES 64
 
 /**
@@ -91,7 +92,7 @@ size_t mnemonic_decode(char const ms_strs[], ms_lan_t lan, byte_t entropy[], siz
  * @return int 0 on success
  */
 int mnemonic_encode(byte_t const entropy[], ms_entropy_t ent_len, ms_lan_t lan, char ms_out[], size_t ms_len);
-  
+
 /**
  * @brief Convert mnemonic to another language
  *

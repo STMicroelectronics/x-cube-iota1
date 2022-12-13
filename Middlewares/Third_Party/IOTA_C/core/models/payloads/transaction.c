@@ -5,7 +5,9 @@
 
 #include "utlist.h"
 
-#include "transaction.h"
+#include "core/models/payloads/transaction.h"
+
+#include "app_azure_rtos_config.h"
 
 #define UNLOCKED_BLOCKS_MAX_COUNT 126
 
@@ -34,7 +36,7 @@ static int sort_output_address(outputs_ht* a, outputs_ht* b) {
   return byte_cmp(a->address, b->address, ED25519_ADDRESS_BYTES);
 }
 
-transaction_essence_t* tx_essence_new(void) {
+transaction_essence_t* tx_essence_new() {
   transaction_essence_t* es = malloc(sizeof(transaction_essence_t));
   if (es) {
     es->tx_type = 0;  // 0 to denote a transaction essence.
@@ -187,7 +189,7 @@ void tx_essence_print(transaction_essence_t* es) {
   printf("]\n");
 }
 
-transaction_payload_t* tx_payload_new(void) {
+transaction_payload_t* tx_payload_new() {
   transaction_payload_t* tx = malloc(sizeof(transaction_payload_t));
   if (tx) {
     tx->type = 0;  // 0 to denote a Transaction payload.
@@ -250,7 +252,7 @@ size_t tx_payload_serialize_length(transaction_payload_t* tx) {
 
 size_t tx_payload_serialize(transaction_payload_t* tx, byte_t buf[]) {
   if (tx == NULL) {
-    return 0;
+    return -1;
   }
 
   byte_t* offset = buf;
@@ -278,7 +280,11 @@ void tx_payload_free(transaction_payload_t* tx) {
 
 void tx_payload_print(transaction_payload_t* tx) {
   if (tx) {
-    printf("Payload type: %lu\n", tx->type);
+#ifdef __ARMCC_VERSION
+    printf("Payload type: %d\n", tx->type);
+#else
+    printf("Payload type: %ld\n", tx->type);
+#endif /* __ARMCC_VERSION */
     tx_essence_print(tx->essence);
     unlock_blocks_print(tx->unlock_blocks);
   }

@@ -4,7 +4,9 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "outputs.h"
+#include "core/models/outputs/outputs.h"
+
+#include "app_azure_rtos_config.h"
 
 #define UTXO_OUTPUT_MIN_COUNT 0
 #define UTXO_OUTPUT_MAX_COUNT 126

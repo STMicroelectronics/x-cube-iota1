@@ -13,6 +13,11 @@
   @endverbatim
 
 =======
+### 01-December-2022 ###
+========================
+   + Introduce ThreadX wrapper for malloc
+
+=======
 ### 10-March-2021 ###
 ========================
    + uthash v2.2.0 (https://github.com/troydhanson/uthash) customized 

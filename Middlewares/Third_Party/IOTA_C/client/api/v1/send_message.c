@@ -8,7 +8,8 @@
 #include "client/api/v1/get_tips.h"
 #include "client/api/v1/send_message.h"
 #include "core/utils/iota_str.h"
-#include "client/network/http_lib.h"
+
+#include "app_azure_rtos_config.h"
 
 char const* const cmd_msg = "/api/v1/messages";
 
@@ -40,68 +41,69 @@ int serialize_indexation(message_t* msg, byte_buf_t* buf) {
   if (!cJSON_AddStringToObject(json_root, JSON_KEY_NET_ID, "")) {
     printf("[%s:%d] networkId object failed\n", __func__, __LINE__);
     goto end;
-  } else {
+  }
 
-    if (utarray_to_json_string_array(msg->parent_msg_ids, json_root, JSON_KEY_PARENT_IDS) != JSON_OK) {
-      printf("[%s:%d] add parents failed\n", __func__, __LINE__);
-      goto end;
-    } else {
+  if (utarray_to_json_string_array(msg->parent_msg_ids, json_root, JSON_KEY_PARENT_IDS) != JSON_OK) {
+    printf("[%s:%d] add parents failed\n", __func__, __LINE__);
+    goto end;
+  }
 
-        /*
-        "payload": {
+  // AP: Add scope to get rid of warning due to goto label
+  {
+    /*
+      "payload": {
         "type": 2,
         "index": "iota.c",
         "data": "48656c6c6f"
       },
-        */
-        cJSON* json_payload = cJSON_AddObjectToObject(json_root, JSON_KEY_PAYLOAD);
-        if (json_payload) {
-          payload_index_t* payload = (payload_index_t*)msg->payload;
-          if (!cJSON_AddNumberToObject(json_payload, JSON_KEY_TYPE, 2)) {
-            printf("[%s:%d] payload/type object failed\n", __func__, __LINE__);
-            goto end;
-          }
-
-          if ((hex_index = byte_buf_str2hex(payload->index)) != NULL) {
-            if (!cJSON_AddStringToObject(json_payload, JSON_KEY_INDEX, (char const *)hex_index->data)) {
-              printf("[%s:%d] payload/index object failed\n", __func__, __LINE__);
-              goto end;
-            }
-          } else {
-            printf("[%s:%d] payload/index serialization failed\n", __func__, __LINE__);
-            goto end;
-          }
-          
-          if ((hex_data = byte_buf_str2hex(payload->data)) != NULL) {
-            if (!cJSON_AddStringToObject(json_payload, JSON_KEY_DATA, (char const *)hex_data->data)) {
-              printf("[%s:%d] payload/data object failed\n", __func__, __LINE__);
-              goto end;
-            }
-          } else {
-            printf("[%s:%d] payload/data serialization failed\n", __func__, __LINE__);
-            goto end;
-          }
-          
-          /*
-          "nonce": "" }
-          */
-          if (!cJSON_AddStringToObject(json_root, JSON_KEY_NONCE, "")) {
-            printf("[%s:%d] nonce object failed\n", __func__, __LINE__);
-            goto end;
-          }
-          
-          // dump json object to a string
-          if ((json_string = cJSON_PrintUnformatted(json_root)) == NULL) {
-            printf("[%s:%d] json string print failed\n", __func__, __LINE__);
-            goto end;
-          }
-          
-          if (byte_buf_append(buf, (byte_t*)json_string, strlen(json_string) + 1) == false) {
-            printf("[%s:%d] append json to buffer failed\n", __func__, __LINE__);
-            goto end;
-          }
-          ret = 0;
+    */
+    cJSON* json_payload = cJSON_AddObjectToObject(json_root, JSON_KEY_PAYLOAD);
+    if (json_payload) {
+      payload_index_t* payload = (payload_index_t*)msg->payload;
+      if (!cJSON_AddNumberToObject(json_payload, JSON_KEY_TYPE, 2)) {
+        printf("[%s:%d] payload/type object failed\n", __func__, __LINE__);
+        goto end;
+      }
+      
+      if ((hex_index = byte_buf_str2hex(payload->index)) != NULL) {
+        if (!cJSON_AddStringToObject(json_payload, JSON_KEY_INDEX, (char const*)hex_index->data)) {
+          printf("[%s:%d] payload/index object failed\n", __func__, __LINE__);
+          goto end;
         }
+      } else {
+        printf("[%s:%d] payload/index serialization failed\n", __func__, __LINE__);
+        goto end;
+      }
+      
+      if ((hex_data = byte_buf_str2hex(payload->data)) != NULL) {
+        if (!cJSON_AddStringToObject(json_payload, JSON_KEY_DATA, (char const*)hex_data->data)) {
+          printf("[%s:%d] payload/data object failed\n", __func__, __LINE__);
+          goto end;
+        }
+      } else {
+        printf("[%s:%d] payload/data serialization failed\n", __func__, __LINE__);
+        goto end;
+      }
+      
+      /*
+      "nonce": "" }
+      */
+      if (!cJSON_AddStringToObject(json_root, JSON_KEY_NONCE, "")) {
+        printf("[%s:%d] nonce object failed\n", __func__, __LINE__);
+        goto end;
+      }
+      
+      // dump json object to a string
+      if ((json_string = cJSON_PrintUnformatted(json_root)) == NULL) {
+        printf("[%s:%d] json string print failed\n", __func__, __LINE__);
+        goto end;
+      }
+      
+      if (byte_buf_append(buf, (byte_t*)json_string, strlen(json_string) + 1) == false) {
+        printf("[%s:%d] append json to buffer failed\n", __func__, __LINE__);
+        goto end;
+      }
+      ret = 0;
     }
   }
 
@@ -131,8 +133,10 @@ int deser_send_message_response(char const* json_str, res_send_message_t* res) {
     res->u.error = res_err;
     ret = 0;
     goto end;
-  } else {
+  }
 
+  // AP: Add scope to get rid of warning due to goto label
+  {
     cJSON* data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
     if (data_obj) {
       // message ID
@@ -153,16 +157,14 @@ end:
 
 int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_message_t* res) {
   int ret = -1;
+  long http_st_code = 0;
   byte_buf_t* json_data = byte_buf_new();
-  http_context_t http_ctx;
-  http_response_t http_res;
-  http_res.body = byte_buf_new();
-  if (!json_data || !http_res.body) {
+  byte_buf_t* node_res = byte_buf_new();
+  if (!json_data || !node_res) {
     printf("[%s:%d] allocate http buffer failed\n", __func__, __LINE__);
     ret = -1;
     goto end;
   }
-  http_res.code = 0;
 
   // serialize message
   switch (msg->type) {
@@ -174,7 +176,7 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
       ret = serialize_indexation(msg, json_data);
       break;
     default:
-      printf("[%s:%d] UNKNOWN message payload type\n", __func__, __LINE__);
+      printf("[%s:%d] UNKNOW message payload type\n", __func__, __LINE__);
       break;
   }
 
@@ -182,47 +184,23 @@ int send_message(iota_client_conf_t const* const conf, message_t* msg, res_send_
     goto end;
   }
 
-  ret = -1;
-//  printf("[%s:%d]: json_data=%s\n", __func__, __LINE__, json_data->data);
-  // http client configuration
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd_msg;
-  http_ctx.port = conf->port;
-  http_ctx.use_tls = conf->use_tls;
-
-  // http open
-  //printf("[%s:%d]: Opening HTTP session...\n", __func__, __LINE__);
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto end;
-  }
-
-  // send request via http client
-  //printf("[%s:%d]: Sending HTTP request...\n", __func__, __LINE__);
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  json_data);
-  if ( ret < 0 ) {
-    printf("[%s:%d]: HTTP send/recv problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
-    // deserialize node response
-    ret = deser_send_message_response((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  //printf("[%s:%d]: Closing HTTP session...\n", __func__, __LINE__);
-  if (http_close(&http_ctx) != HTTP_OK )
+  // AP: Add scope to get rid of warning due to goto label
   {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    // http client configuration
+    http_client_config_t http_conf = {.host = conf->host, .path = cmd_msg, .use_tls = conf->use_tls, .port = conf->port};
+    
+    if ((ret = http_client_post(&http_conf, json_data, node_res, &http_st_code)) == 0) {
+      // deserialize node response
+      byte_buf2str(node_res);
+      ret = deser_send_message_response((char const*)node_res->data, res);
+    } else {
+      printf("[%s:%d]: http client post failed\n", __func__, __LINE__);
+    }
   }
 
 end:
   byte_buf_free(json_data);
-  byte_buf_free(http_res.body);
+  byte_buf_free(node_res);
   return ret;
 }
 
@@ -241,7 +219,7 @@ int send_indexation_msg(iota_client_conf_t const* const conf, char const index[]
 
   if ((ret = get_tips(conf, tips)) != 0) {
     printf("[%s:%d] get tips message failed\n", __func__, __LINE__);
-    goto done;
+    return ret;
   }
 
   if (tips->is_error) {
@@ -274,7 +252,7 @@ int send_indexation_msg(iota_client_conf_t const* const conf, char const index[]
 
   // send message to a node
   if ((ret = send_message(conf, msg, res)) != 0) {
-    printf("[%s:%d] send message problem\n", __func__, __LINE__);
+    printf("[%s:%d] send message failed\n", __func__, __LINE__);
   }
 
 done:
@@ -286,90 +264,66 @@ done:
 
 int send_core_message(iota_client_conf_t const* const conf, core_message_t* msg, res_send_message_t* res) {
   int ret = -1;
+  long http_st_code = 0;
   byte_buf_t* json_data = byte_buf_new();
-  http_response_t http_res;
-  http_context_t http_ctx;
-  http_res.body = byte_buf_new();
-  http_res.code = 0;
+  byte_buf_t* node_res = byte_buf_new();
   res_tips_t* tips = NULL;
-  byte_t tmp_msg_parent[IOTA_MESSAGE_ID_BYTES];
-  memset(&tmp_msg_parent, 0, sizeof(tmp_msg_parent));
+  byte_t tmp_msg_parent[IOTA_MESSAGE_ID_BYTES] = {0};
 
-  if (!json_data || !http_res.body) {
+  if (!json_data || !node_res) {
     printf("[%s:%d] allocate http buffer failed\n", __func__, __LINE__);
     goto end;
-  } else {
-    if ((tips = res_tips_new()) == NULL) {
-      printf("[%s:%d] allocate tips response failed\n", __func__, __LINE__);
-      goto end;
-    } else {
-      // get tips
-      if ((ret = get_tips(conf, tips)) != 0) {
-        printf("[%s:%d] get tips failed\n", __func__, __LINE__);
-        goto end;
-      } else {
-        if (tips->is_error) {
-          printf("[%s:%d] get tips failed: %s\n", __func__, __LINE__, tips->u.error->msg);
-          goto end;
-        } else {
-          char** p = NULL;
-          p = (char**)utarray_next(tips->u.tips, p);
-          while (p != NULL) {
-            hex_2_bin(*p, STR_TIP_MSG_ID_LEN, tmp_msg_parent, sizeof(tmp_msg_parent));
-            utarray_push_back(msg->parents, tmp_msg_parent);
-            p = (char**)utarray_next(tips->u.tips, p);
-          }
-          char* msg_str = message_to_json(msg);
-          if (!msg_str) {
-            printf("[%s:%d] build message failed\n", __func__, __LINE__);
-            goto end;
-          }
-          // put json string into byte_buf_t
-          json_data->data = (byte_t*)msg_str;
-          json_data->cap = json_data->len = strlen(msg_str) + 1;
-        }
-      }
-    }
   }
 
-  ret = -1;
-
-  // config http client
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd_msg;
-  http_ctx.port = conf->port;
-  http_ctx.use_tls = conf->use_tls;
-
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+  if ((tips = res_tips_new()) == NULL) {
+    printf("[%s:%d] allocate tips response failed\n", __func__, __LINE__);
     goto end;
   }
 
-  // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  json_data);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
-    // deserialize node response
-    ret = deser_send_message_response((char const *)http_res.body->data, res);
+  // get tips
+  if ((ret = get_tips(conf, tips)) != 0) {
+    printf("[%s:%d] get tips failed\n", __func__, __LINE__);
+    goto end;
   }
 
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
+  if (tips->is_error) {
+    printf("[%s:%d] get tips failed: %s\n", __func__, __LINE__, tips->u.error->msg);
+    goto end;
+  }
+
+  // AP: Add scope to get rid of warning due to goto label
   {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    char** p = NULL;
+    while ((p = (char**)utarray_next(tips->u.tips, p))) {
+      hex_2_bin(*p, STR_TIP_MSG_ID_LEN, tmp_msg_parent, sizeof(tmp_msg_parent));
+      utarray_push_back(msg->parents, tmp_msg_parent);
+    }
+    
+    char* msg_str = message_to_json(msg);
+    if (!msg_str) {
+      printf("[%s:%d] build message failed\n", __func__, __LINE__);
+      goto end;
+    }
+    
+    // put json string into byte_buf_t
+    json_data->data = (byte_t*)msg_str;
+    json_data->cap = json_data->len = strlen(msg_str) + 1;
+    
+    // config http client
+    http_client_config_t http_conf = {.host = conf->host, .path = cmd_msg, .use_tls = conf->use_tls, .port = conf->port};
+    
+    if ((ret = http_client_post(&http_conf, json_data, node_res, &http_st_code)) == 0) {
+      // deserialize node response
+      byte_buf2str(node_res);
+      ret = deser_send_message_response((char const*)node_res->data, res);
+    } else {
+      printf("[%s:%d]: http client post failed\n", __func__, __LINE__);
+    }
   }
 
 end:
   byte_buf_free(json_data);
-  byte_buf_free(http_res.body);
+  byte_buf_free(node_res);
   res_tips_free(tips);
   return ret;
 }

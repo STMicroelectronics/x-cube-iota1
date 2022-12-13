@@ -4,7 +4,9 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "utxo_input.h"
+#include "core/models/inputs/utxo_input.h"
+
+#include "app_azure_rtos_config.h"
 
 #define UTXO_INPUT_MIN_INDEX 0
 #define UTXO_INPUT_MAX_INDEX 126

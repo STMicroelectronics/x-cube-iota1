@@ -3,8 +3,10 @@
 
 #include "client/api/v1/find_message.h"
 #include "client/api/json_utils.h"
-#include "client/network/http_lib.h"
+#include "client/network/http.h"
 #include "core/utils/iota_str.h"
+
+#include "app_azure_rtos_config.h"
 
 static find_msg_t *find_msg_new() {
   find_msg_t *ids = malloc(sizeof(find_msg_t));
@@ -26,11 +28,10 @@ static void find_msg_free(find_msg_t *ids) {
   }
 }
 
-res_find_msg_t *res_find_msg_new(void) {
+res_find_msg_t *res_find_msg_new() {
   res_find_msg_t *res = malloc(sizeof(res_find_msg_t));
   if (res) {
     res->is_error = false;
-    res->u.error = NULL;
     res->u.msg_ids = NULL;
     return res;
   }
@@ -90,15 +91,16 @@ int deser_find_message(char const *const j_str, res_find_msg_t *res) {
     res->u.error = res_err;
     ret = 0;
     goto end;
+  }
 
-  } else {
-
+  // AP: Add scope to get rid of warning due to goto label
+  {
     cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
     if (data_obj) {
       // allocate find_msg_t after parsing json object.
       res->u.msg_ids = find_msg_new();
       if (res->u.msg_ids == NULL) {
-        printf("[%s:%d]: find_msg_t object allocation failed\n", __func__, __LINE__);
+        printf("[%s:%d]: find_msg_t object allocation filaed\n", __func__, __LINE__);
         goto end;
       }
       // TODO index element?
@@ -133,12 +135,10 @@ end:
 int find_message_by_index(iota_client_conf_t const *conf, char const index[], res_find_msg_t *res) {
   int ret = -1;
   iota_str_t *cmd = NULL;
+  byte_buf_t *http_res = NULL;
+  long st = 0;
   // the maximum Index in hex string is 128 bytes plus a null terminator.
-  char index_hex[129];
-  memset(index_hex, 0, sizeof(index_hex));
-  http_context_t http_ctx;
-  http_response_t http_res;
-  memset(&http_res, 0, sizeof(http_response_t));
+  char index_hex[129] = {0};
 
   if (conf == NULL || index == NULL || res == NULL) {
     // invalid parameters
@@ -167,50 +167,26 @@ int find_message_by_index(iota_client_conf_t const *conf, char const index[], re
     goto done;
   }
 
-  // allocate response
-  http_res.body = byte_buf_new();
-  if (http_res.body == NULL) {
-    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
-    goto done;
-  }
-  http_res.code = 0;
-
   // http client configuration
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd->buf;
-  http_ctx.port = conf->port;
-  http_ctx.use_tls = conf->use_tls;
-
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  NULL);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
-    // json deserialization
-    ret = deser_find_message((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
   {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    http_client_config_t http_conf = {.host = conf->host, .path = cmd->buf, .use_tls = conf->use_tls, .port = conf->port};
+    
+    if ((http_res = byte_buf_new()) == NULL) {
+      printf("[%s:%d]: OOM\n", __func__, __LINE__);
+      goto done;
+    }
+    
+    // send request via http client
+    if ((ret = http_client_get(&http_conf, http_res, &st)) == 0) {
+      byte_buf2str(http_res);
+      // json deserialization
+      ret = deser_find_message((char const *)http_res->data, res);
+    }
   }
 
 done:
   // cleanup command
   iota_str_destroy(cmd);
-  byte_buf_free(http_res.body);
+  byte_buf_free(http_res);
   return ret;
 }

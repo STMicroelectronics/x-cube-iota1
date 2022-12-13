@@ -32,6 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>  /* memset, etc */
 #include <stdlib.h>  /* exit */
 
+#include "app_azure_rtos_config.h"
+
 #ifdef __GNUC__
 #define UTARRAY_UNUSED __attribute__((__unused__))
 #else
@@ -234,10 +236,10 @@ typedef struct {
 static void utarray_str_cpy(void *dst, const void *src) {
   char *const *srcc = (char *const *)src;
   char **dstc = (char**)dst;
-#if (!defined(__CC_ARM))
-  /* strdup replaced by malloc/memcpy since not supported by keil */
-  *dstc = (*srcc == NULL) ? NULL : strdup(*srcc);
-#else
+//#if (!defined(__CC_ARM))
+//  /* strdup replaced by malloc/memcpy since not supported by keil */
+//  *dstc = (*srcc == NULL) ? NULL : strdup(*srcc);
+//#else
   if(*srcc == NULL) {
     *dstc = NULL;
   } else {
@@ -248,7 +250,7 @@ static void utarray_str_cpy(void *dst, const void *src) {
     }
     memcpy(*dstc, *srcc, len);
   }
-#endif
+//#endif
 }
 static void utarray_str_dtor(void *elt) {
   char **eltc = (char**)elt;

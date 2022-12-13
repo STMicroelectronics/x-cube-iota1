@@ -8,22 +8,6 @@
 #include "core/types.h"
 #include "crypto/iota_crypto.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CORE
- * @{
- */
-
-/** @defgroup CORE_UNLOCK_BLOCK Unlock Block
- * @{
- */
-
-/** @defgroup CORE_UNLOCK_BLOCK_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
 // ed25519 signature block  = signature type + public key + signature
 #define ED25519_SIGNATURE_BLOCK_BYTES (1 + ED_PUBLIC_KEY_BYTES + ED_SIGNATURE_BYTES)  // 97 bytes
 // unlock_block_t + reference = 1 + 2
@@ -42,25 +26,16 @@ typedef struct unlock_blocks {
   struct unlock_blocks* next;  ///< point to next block
 } unlock_blocks_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/** @defgroup CORE_UNLOCK_BLOCK_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Initialize a unlock block list object
  *
  * @return unlock_blocks_t* a NULL pointer
  */
-unlock_blocks_t* unlock_blocks_new(void);
+unlock_blocks_t* unlock_blocks_new();
 
 /**
  * @brief Add an ed25519 signature block
@@ -129,24 +104,8 @@ void unlock_blocks_free(unlock_blocks_t* blocks);
  */
 void unlock_blocks_print(unlock_blocks_t* blocks);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

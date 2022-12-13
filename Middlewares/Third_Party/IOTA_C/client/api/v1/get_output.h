@@ -9,37 +9,11 @@
 
 #include "client/api/v1/response_error.h"
 #include "client/client_service.h"
+#include "client/network/http.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup GET_OUTPUT Get Output
- * @{
- */
-
-/** @defgroup GET_OUTPUT_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
+// output id = transaction id(64 bytes) + output index(4 bytes)
 #define IOTA_OUTPUT_ID_HEX_BYTES 68
 #define IOTA_OUTPUT_ID_HEX_STR (IOTA_OUTPUT_ID_HEX_BYTES + 1)
-
-/**
- * @}
- */
-
-/** @defgroup GET_OUTPUT_EXPORTED_TYPES Exported Types
- * @{
- */
 
 /**
  * @brief An output object
@@ -69,17 +43,9 @@ typedef struct {
   } u;
 } res_output_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup GET_OUTPUT_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Get an output from a given output ID
@@ -107,28 +73,8 @@ int deser_get_output(char const *const j_str, res_output_t *res);
  */
 void dump_output_response(res_output_t *res);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

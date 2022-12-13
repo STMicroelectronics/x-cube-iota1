@@ -8,26 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CORE
- * @{
- */
-
-/** @addtogroup CORE_UTILS
- * @{
- */
-
-/** @defgroup STRING_OBJECT String Object
- * @{
- */
-
-/** @defgroup STRING_OBJECT_EXPORTED_TYPES Exported Types
- * @{
- */
-
 /**
  * @brief A mutable string buffer.
  *
@@ -38,17 +18,9 @@ typedef struct {
   size_t len; /**< string length */
 } iota_str_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup STRING_OBJECT_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief New a string object from c_string.
@@ -129,28 +101,8 @@ static inline int iota_str_cmp(iota_str_t const *a, iota_str_t const *b) { retur
  */
 iota_str_t *iota_str_reserve(size_t len);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #ifdef CRYPTO_USE_SODIUM
-#include "sodium.h"
+#include <sodium.h>
+#include <sodium/crypto_auth_hmacsha512.h>
 #elif CRYPTO_USE_MBEDTLS
 #include <string.h>
 #include "mbedtls/ctr_drbg.h"
@@ -16,14 +17,6 @@
 #include <openssl/rand.h>
 #include <string.h>
 #include <sys/random.h>
-#elif CRYPTO_USE_STLIB
-#include <stdint.h>
-#include <string.h>
-#include "ecc/cmox_eddsa.h"
-#include "mac/cmox_hmac.h"
-#include "hash/cmox_sha256.h"
-#include "hash/cmox_sha512.h"
-#include "blake2.h"
 #else
 #error Crypto backend is not defined
 #endif
@@ -44,7 +37,6 @@
 
 #include "crypto/iota_crypto.h"
 
-#ifdef CRYPTO_USE_SODIUM
 // store 32 bits in big-endian
 static inline void store32_be(uint8_t dst[4], uint32_t w) {
   if (is_little_endian()) {
@@ -59,14 +51,10 @@ static inline void store32_be(uint8_t dst[4], uint32_t w) {
     memcpy(dst, &w, sizeof w);
   }
 }
-#endif /* CRYPTO_USE_SODIUM */
-
-extern struct __RNG_HandleTypeDef hrng;
-int iota_rng_raw(void *data, uint8_t *output, size_t len);
 
 void iota_crypto_randombytes(uint8_t *const buf, const size_t len) {
-#if defined(CRYPTO_USE_SODIUM) || defined(CRYPTO_USE_STLIB)
-  iota_rng_raw(&hrng, buf, len);
+#if defined(CRYPTO_USE_SODIUM)
+  randombytes_buf((void *)buf, len);
 
 // TODO: validate on Mbed OS
 // #elif defined(CRYPTO_USE_MBEDTLS) && defined(__MBED__)
@@ -107,21 +95,6 @@ void iota_crypto_randombytes(uint8_t *const buf, const size_t len) {
 void iota_crypto_keypair(uint8_t const seed[], iota_keypair_t *keypair) {
 #if defined(CRYPTO_USE_SODIUM)
   crypto_sign_seed_keypair(keypair->pub, keypair->priv, seed);
-#elif defined(CRYPTO_USE_STLIB)
-  cmox_ecc_handle_t ctx; /* ECC context */
-  uint8_t membuf[548]; /* minimum memory necessary to generate keys */
-
-  /* set the memory buffer and the mathematical engine */
-  cmox_ecc_construct(&ctx, CMOX_MATH_FUNCS_SUPERFAST256, membuf, sizeof(membuf));
-
-  /* call the EdDSA key-pair generation routine */
-  (void)cmox_eddsa_keyGen(&ctx, CMOX_ECC_ED25519_OPT_HIGHMEM,
-                          seed, ED_SEED_BYTES,
-                          keypair->priv, NULL,
-                          keypair->pub, NULL);
-
-  /* clean & destroy the context */
-  cmox_ecc_cleanup(&ctx);
 #elif defined(CRYPTO_USE_ED25519_DONNA)
   ed25519_public_key pub;
   ed25519_publickey(seed, pub);
@@ -137,31 +110,6 @@ int iota_crypto_sign(uint8_t const priv_key[], uint8_t msg[], size_t msg_len, ui
 #if defined(CRYPTO_USE_SODIUM)
   unsigned long long sign_len = ED_SIGNATURE_BYTES;
   return crypto_sign_ed25519_detached(signature, &sign_len, msg, msg_len, priv_key);
-#elif defined(CRYPTO_USE_STLIB)
-  cmox_ecc_retval_t rv; /* CMOX return value */
-  int ret = 1; /* final return value */
-  cmox_ecc_handle_t ctx; /* ECC context */
-  uint8_t membuf[1388]; /* minimum memory necessary to sign 1kB of data */
-
-  /* set the memory buffer and the mathematical engine */
-  cmox_ecc_construct(&ctx, CMOX_MATH_FUNCS_SUPERFAST256, membuf, sizeof(membuf));
-
-  /* call the EdDSA signature generation routine */
-  rv = cmox_eddsa_sign(&ctx, CMOX_ECC_ED25519_OPT_HIGHMEM,
-                       priv_key, ED_PRIVATE_KEY_BYTES,
-                       msg, msg_len,
-                       signature, NULL);
-
-  /* clean & destroy the context */
-  cmox_ecc_cleanup(&ctx);
-
-  /* set the proper return value */
-  if (rv == CMOX_ECC_SUCCESS)
-  {
-    ret = 0;
-  }
-
-  return ret;
 #elif defined(CRYPTO_USE_ED25519_DONNA)
   ed25519_sign(msg, msg_len, priv_key, priv_key + 32, signature);
   return 0;
@@ -179,22 +127,6 @@ int iota_crypto_hmacsha256(uint8_t const secret_key[], uint8_t msg[], size_t msg
   if (md_info) {
     ret = mbedtls_md_hmac(md_info, secret_key, 32, msg, msg_len, auth);
   }
-  return ret;
-#elif defined(CRYPTO_USE_STLIB)
-  cmox_mac_retval_t rv; /* CMOX return value */
-  int ret = 1; /* final return value */
-
-  rv = cmox_mac_compute(CMOX_HMAC_SHA256_ALGO, /* algorithm */
-                        msg, msg_len,          /* input */
-                        secret_key, 32u,       /* key */
-                        NULL, 0u,              /* custom data */
-                        auth, 32u, NULL);      /* tag, expected length, output length */
-  /* set the proper return value */
-  if (rv == CMOX_MAC_SUCCESS)
-  {
-    ret = 0;
-  }
-
   return ret;
 #elif defined(CRYPTO_USE_OPENSSL)
   uint8_t *hash = HMAC(EVP_sha256(), secret_key, 32, (const unsigned char *)msg, msg_len, NULL, NULL);
@@ -215,22 +147,6 @@ int iota_crypto_hmacsha512(uint8_t const secret_key[], uint8_t msg[], size_t msg
     ret = mbedtls_md_hmac(md_info, secret_key, 32, msg, msg_len, auth);
   }
   return ret;
-#elif defined(CRYPTO_USE_STLIB)
-  cmox_mac_retval_t rv; /* CMOX return value */
-  int ret = 1; /* final return value */
-
-  rv = cmox_mac_compute(CMOX_HMAC_SHA512_ALGO, /* algorithm */
-                        msg, msg_len,          /* input */
-                        secret_key, 32u,       /* key */
-                        NULL, 0u,              /* custom data */
-                        auth, 64u, NULL);      /* tag, expected length, output length */
-  /* set the proper return value */
-  if (rv == CMOX_MAC_SUCCESS)
-  {
-    ret = 0;
-  }
-
-  return ret;
 #elif defined(CRYPTO_USE_OPENSSL)
   uint8_t *hash = HMAC(EVP_sha512(), secret_key, 32, (const unsigned char *)msg, msg_len, NULL, NULL);
   memcpy(auth, hash, 64);
@@ -241,7 +157,7 @@ int iota_crypto_hmacsha512(uint8_t const secret_key[], uint8_t msg[], size_t msg
 }
 
 int iota_blake2b_sum(uint8_t const msg[], size_t msg_len, uint8_t out[], size_t out_len) {
-#if defined(CRYPTO_USE_SODIUM) || defined(CRYPTO_USE_STLIB)
+#if defined(CRYPTO_USE_SODIUM)
   return crypto_generichash_blake2b(out, out_len, msg, msg_len, NULL, 0);
 #elif defined(CRYPTO_USE_BLAKE2B_REF)
   return blake2b(out, out_len, msg, msg_len, NULL, 0);
@@ -253,18 +169,6 @@ int iota_blake2b_sum(uint8_t const msg[], size_t msg_len, uint8_t out[], size_t 
 int iota_crypto_sha256(uint8_t const msg[], size_t msg_len, uint8_t hash[]) {
 #if defined(CRYPTO_USE_SODIUM)
   return crypto_hash_sha256(hash, msg, msg_len);
-#elif defined(CRYPTO_USE_STLIB)
-  cmox_hash_retval_t rv;
-
-  rv = cmox_hash_compute(CMOX_SHA256_ALGO,
-                         msg, msg_len,           /* input and size */
-                         hash, CMOX_SHA256_SIZE, /* output digest, and desired size (you may want truncated hash) */
-                         NULL);                  /* computed output length, optional */
-  if (rv != CMOX_HASH_SUCCESS)
-  {
-    return -1;
-  }
-  return 0;
 #elif defined(CRYPTO_USE_MBEDTLS)
   mbedtls_sha256(msg, msg_len, hash, 0);
   return 0;
@@ -291,18 +195,6 @@ int iota_crypto_sha256(uint8_t const msg[], size_t msg_len, uint8_t hash[]) {
 int iota_crypto_sha512(uint8_t const msg[], size_t msg_len, uint8_t hash[]) {
 #if defined(CRYPTO_USE_SODIUM)
   return crypto_hash_sha512(hash, msg, msg_len);
-#elif defined(CRYPTO_USE_STLIB)
-  cmox_hash_retval_t rv;
-
-  rv = cmox_hash_compute(CMOX_SHA512_ALGO,
-                         msg, msg_len,           /* input and size */
-                         hash, CMOX_SHA512_SIZE, /* output digest, and desired size (you may want truncated hash) */
-                         NULL);                  /* computed output length, optional */
-  if (rv != CMOX_HASH_SUCCESS)
-  {
-    return -1;
-  }
-  return 0;
 #elif defined(CRYPTO_USE_MBEDTLS)
   mbedtls_sha512(msg, msg_len, hash, 0);
   return 0;
@@ -367,9 +259,6 @@ int iota_crypto_pbkdf2_hmac_sha512(char const pwd[], size_t pwd_len, char const 
 
   sodium_memzero((void *)&PShctx, sizeof PShctx);
   return 0;
-#elif defined(CRYPTO_USE_STLIB)
-  // TODO
-  return -1;
 #elif defined(CRYPTO_USE_MBEDTLS)
   int ret = -1;
   mbedtls_md_context_t ctx;

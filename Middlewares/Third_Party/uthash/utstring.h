@@ -33,6 +33,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <stddef.h>  /* size_t */
+#include "app_azure_rtos_config.h"
+
 #ifdef __GNUC__
 #define UTSTRING_UNUSED __attribute__((__unused__))
 #else

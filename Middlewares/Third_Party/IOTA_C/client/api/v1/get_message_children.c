@@ -6,10 +6,12 @@
 
 #include "client/api/json_utils.h"
 #include "client/api/v1/get_message_children.h"
-#include "client/network/http_lib.h"
+#include "client/network/http.h"
 #include "core/utils/iota_str.h"
 
-static msg_children_t *msg_children_new(void) {
+#include "app_azure_rtos_config.h"
+
+static msg_children_t *msg_children_new() {
   msg_children_t *ch = malloc(sizeof(msg_children_t));
   if (ch) {
     ch->max_results = 0;
@@ -30,7 +32,7 @@ static void msg_children_free(msg_children_t *ch) {
   }
 }
 
-res_msg_children_t *res_msg_children_new(void) {
+res_msg_children_t *res_msg_children_new() {
   res_msg_children_t *res = malloc(sizeof(res_msg_children_t));
   if (res) {
     res->is_error = false;
@@ -92,8 +94,11 @@ int deser_msg_children(char const *const j_str, res_msg_children_t *res) {
     res->is_error = true;
     res->u.error = res_err;
     ret = 0;
-  } else {
+    goto end;
+  }
 
+  // AP: Add scope to get rid of warning due to goto label
+  {
     cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
     if (data_obj) {
       // allocate message metadata object after parsing json object.
@@ -139,9 +144,8 @@ end:
 int get_message_children(iota_client_conf_t const *ctx, char const msg_id[], res_msg_children_t *res) {
   int ret = -1;
   iota_str_t *cmd = NULL;
-  http_context_t http_ctx;
-  http_response_t http_res;
-  memset(&http_res, 0, sizeof(http_response_t));
+  byte_buf_t *http_res = NULL;
+  long st = 0;
   char const *const cmd_prefix = "/api/v1/messages/";
   char const *const cmd_suffix = "/children";
 
@@ -165,50 +169,24 @@ int get_message_children(iota_client_conf_t const *ctx, char const msg_id[], res
   snprintf(cmd->buf, cmd->cap, "%s%s%s", cmd_prefix, msg_id, cmd_suffix);
   cmd->len = strlen(cmd->buf);
 
-  // allocate response
-  http_res.body = byte_buf_new();
-  if (http_res.body == NULL) {
-    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
-    goto done;
-  }
-  http_res.code = 0;
-
   // http client configuration
-  http_ctx.host = ctx->host;
-  http_ctx.path = cmd->buf;
-  http_ctx.use_tls = ctx->use_tls;
-  http_ctx.port = ctx->port;
+  http_client_config_t http_conf = {.host = ctx->host, .path = cmd->buf, .use_tls = ctx->use_tls, .port = ctx->port};
 
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+  if ((http_res = byte_buf_new()) == NULL) {
+    printf("[%s:%d]: OOM\n", __func__, __LINE__);
     goto done;
   }
 
   // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  NULL);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
+  if ((ret = http_client_get(&http_conf, http_res, &st)) == 0) {
+    byte_buf2str(http_res);
     // json deserialization
-    ret = deser_msg_children((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
-  {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    ret = deser_msg_children((char const *)http_res->data, res);
   }
 
 done:
   // cleanup command
   iota_str_destroy(cmd);
-  byte_buf_free(http_res.body);
+  byte_buf_free(http_res);
   return ret;
 }

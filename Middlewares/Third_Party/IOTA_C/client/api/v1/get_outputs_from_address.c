@@ -1,12 +1,14 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-#include "client/api/json_utils.h"
 #include "client/api/v1/get_outputs_from_address.h"
-#include "client/network/http_lib.h"
+#include "client/api/json_utils.h"
+#include "client/network/http.h"
 #include "core/utils/iota_str.h"
 
-static get_outputs_address_t *outputs_new(void) {
+#include "app_azure_rtos_config.h"
+
+static get_outputs_address_t *outputs_new() {
   get_outputs_address_t *ids = malloc(sizeof(get_outputs_address_t));
   if (ids) {
     memset(ids->address, 0, sizeof(ids->address));
@@ -87,8 +89,10 @@ int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *r
     res->u.error = res_err;
     ret = 0;
     goto end;
-  } else {
+  }
 
+  // AP: Add scope to get rid of warning due to goto label
+  {
     cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
     if (data_obj) {
       res->u.output_ids = outputs_new();
@@ -97,28 +101,29 @@ int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *r
         printf("[%s:%d]: allocate output object failed\n", __func__, __LINE__);
         goto end;
       }
-      ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_ids->address, sizeof(res->u.output_ids->address));
-      if (ret != 0) {
-        printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR);
-        goto end;
-      }
-      ret = json_get_uint32(data_obj, JSON_KEY_MAX_RESULTS, &res->u.output_ids->max_results);
-      if (ret != 0) {
+      
+      if ((ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_ids->address,
+                                 sizeof(res->u.output_ids->address))) != 0) {
+                                   printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR);
+                                   goto end;
+                                 }
+      
+      if ((ret = json_get_uint32(data_obj, JSON_KEY_MAX_RESULTS, &res->u.output_ids->max_results) != 0)) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_MAX_RESULTS);
         goto end;
       }
-      ret = json_get_uint32(data_obj, JSON_KEY_COUNT, &res->u.output_ids->count);
-      if (ret != 0) {
+      
+      if ((ret = json_get_uint32(data_obj, JSON_KEY_COUNT, &res->u.output_ids->count) != 0)) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_COUNT);
         goto end;
       }
-      ret = json_string_array_to_utarray(data_obj, JSON_KEY_OUTPUT_IDS, res->u.output_ids->outputs);
-      if (ret != 0) {
+      
+      if ((ret = json_string_array_to_utarray(data_obj, JSON_KEY_OUTPUT_IDS, res->u.output_ids->outputs)) != 0) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_OUTPUT_IDS);
         goto end;
       }
-      ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output_ids->ledger_idx);
-      if (ret != 0) {
+      
+      if ((ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output_ids->ledger_idx) != 0)) {
         printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);
         goto end;
       }
@@ -131,15 +136,14 @@ int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *r
 
 end:
   cJSON_Delete(json_obj);
-
   return ret;
 }
 
-int get_outputs_from_address(iota_client_conf_t const *conf, bool is_bech32, char const addr[], res_outputs_address_t *res) {
+int get_outputs_from_address(iota_client_conf_t const *conf, bool is_bech32, char const addr[],
+                             res_outputs_address_t *res) {
   int ret = -1;
-  http_context_t http_ctx;
-  http_response_t http_res;
-  memset(&http_res, 0, sizeof(http_response_t));
+  long st = 0;
+  byte_buf_t *http_res = NULL;
 
   if (conf == NULL || addr == NULL || res == NULL) {
     // invalid parameters
@@ -168,49 +172,27 @@ int get_outputs_from_address(iota_client_conf_t const *conf, bool is_bech32, cha
     goto done;
   }
 
-  // allocate response
-  http_res.body = byte_buf_new();
-  if (http_res.body == NULL) {
-    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
-    goto done;
-  }
-  http_res.code = 0;
-
-  // http client configuration
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd_buffer;
-  http_ctx.use_tls = conf->use_tls;
-  http_ctx.port = conf->port;
-
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  NULL);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
-    // json deserialization
-    ret = deser_outputs_from_address((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
+  // AP: Add scope to get rid of warning due to goto label
   {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    // http client configuration
+    http_client_config_t http_conf = {
+      .host = conf->host, .path = cmd_buffer, .use_tls = conf->use_tls, .port = conf->port};
+    
+    if ((http_res = byte_buf_new()) == NULL) {
+      printf("[%s:%d]: OOM\n", __func__, __LINE__);
+      goto done;
+    }
+    
+    // send request via http client
+    if ((ret = http_client_get(&http_conf, http_res, &st)) == 0) {
+      byte_buf2str(http_res);
+      // json deserialization
+      ret = deser_outputs_from_address((char const *)http_res->data, res);
+    }
   }
 
 done:
   // cleanup command
-  byte_buf_free(http_res.body);
+  byte_buf_free(http_res);
   return ret;
 }

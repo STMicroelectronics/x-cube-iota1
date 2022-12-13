@@ -59,6 +59,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * The sort macro is O(n log(n)) for all types of single/double/circular lists.
  */
 
+#include <stddef.h>  /* size_t */
+#include "app_azure_rtos_config.h"
+
 /* These macros use decltype or the earlier __typeof GNU extension.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+
    when compiling c++ source) this code uses whatever method is needed

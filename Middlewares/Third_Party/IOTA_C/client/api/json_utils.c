@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "json_utils.h"
+#include "client/api/json_utils.h"
 
 json_error_t json_get_string(cJSON const* const obj, char const key[], char str[], size_t str_len) {
   if (obj == NULL || key == NULL || str == NULL) {
@@ -123,10 +123,8 @@ json_error_t utarray_to_json_string_array(UT_array const* const ut, cJSON* const
 
   cJSON_AddItemToObject(json_obj, key, array_obj);
 
-  p = (char**)utarray_next(ut, p);
-  while (p != NULL) {
+  while ((p = (char**)utarray_next(ut, p))) {
     cJSON_AddItemToArray(array_obj, cJSON_CreateString(*p));
-    p = (char**)utarray_next(ut, p);
   }
   return JSON_OK;
 }

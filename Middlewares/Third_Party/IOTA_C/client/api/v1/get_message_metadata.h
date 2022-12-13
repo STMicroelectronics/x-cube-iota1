@@ -11,26 +11,6 @@
 #include "core/models/models_message.h"
 #include "core/types.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup GET_MESSAGE_METADATA Get Message Metadata
- * @{
- */
-
-/** @defgroup GET_MESSAGE_METADATA_EXPORTED_TYPES Exported Types
- * @{
- */
-
 /**
  * @brief Stores the message metadata object
  *
@@ -59,23 +39,14 @@ typedef struct {
   } u;
 } res_msg_meta_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup GET_MESSAGE_METADATA_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
-
 /**
  * @brief Allocates message metadata response
  * @return res_msg_meta_t*
  */
-res_msg_meta_t *res_msg_meta_new(void);
+res_msg_meta_t *res_msg_meta_new();
 
 /**
  * @brief Frees a message metadata reponse object
@@ -112,35 +83,15 @@ char *res_msg_meta_parent_get(res_msg_meta_t *res, size_t index);
 /**
  * @brief Gets message metadata from a given message ID
  *
- * @param[in] conf IOTA Client conf
+ * @param[in] ctx IOTA Client conf
  * @param[in] msg_id A message ID string for query
  * @param[out] res A message metadata response
  * @return int 0 on success
  */
-int get_message_metadata(iota_client_conf_t const *conf, char const msg_id[], res_msg_meta_t *res);
-
-/**
- * @}
- */
+int get_message_metadata(iota_client_conf_t const *ctx, char const msg_id[], res_msg_meta_t *res);
 
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif  // __CLIENT_API_V1_MSG_META_H__

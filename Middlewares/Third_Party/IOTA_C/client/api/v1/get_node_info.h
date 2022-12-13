@@ -13,26 +13,6 @@
 #include "client/client_service.h"
 #include "core/types.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup GET_NODE_INFO Get Node Info
- * @{
- */
-
-/** @defgroup GET_NODE_INFO_EXPORTED_TYPES Exported Types
- * @{
- */
-
 /**
  * @brief The general information about the node
  *
@@ -67,23 +47,14 @@ typedef struct {
   } u;
 } res_node_info_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup GET_NODE_INFO_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
-
 /**
  * @brief Allocates node info response object
  * @return res_node_info_t*
  */
-res_node_info_t *res_node_info_new(void);
+res_node_info_t *res_node_info_new();
 
 /**
  * @brief Frees a node info response object
@@ -105,7 +76,7 @@ size_t get_node_features_num(res_node_info_t *info);
  * @return char* with features
  */
 
-char *get_node_features_at(res_node_info_t *info, int idx);
+char *get_node_features_at(res_node_info_t *info, size_t idx);
 
 /**
  * @brief Gets info API
@@ -125,28 +96,8 @@ int get_node_info(iota_client_conf_t const *conf, res_node_info_t *res);
  */
 int deser_node_info(char const *const j_str, res_node_info_t *res);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

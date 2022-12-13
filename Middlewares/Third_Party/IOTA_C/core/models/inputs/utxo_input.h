@@ -10,44 +10,17 @@
 #include "crypto/iota_crypto.h"
 #include "uthash.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @defgroup CORE Core
- * @{
- */
-
-/** @defgroup INPUTS Inputs
- * @{
- */
-
-/** @defgroup UTXO_INPUT UTXO Input
- * @{
- */
-
-/** @defgroup UTXO_INPUT_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
 #define TRANSACTION_ID_BYTES 32
 // Serialized bytes = input type(uint8_t) + transaction id(32bytes) + index(uint16_t)
 #define UTXO_INPUT_SERIALIZED_BYTES (1 + TRANSACTION_ID_BYTES + 2)
-
-/**
- * @}
- */
-
-/** @defgroup UTXO_INPUT_EXPORTED_TYPES Exported Types
- * @{
- */
 
 /**
  * @brief ED25519 keypair structure
  *
  */
 typedef struct {
-  byte_t pub_key[ED_PUBLIC_KEY_BYTES];   ///< The public key of the Ed25519 keypair which is used to verify the signature.
+  byte_t
+      pub_key[ED_PUBLIC_KEY_BYTES];   ///< The public key of the Ed25519 keypair which is used to verify the signature.
   byte_t priv[ED_PRIVATE_KEY_BYTES];  ///< The private key for signing the serialized Unsigned Transaction.
 } ed25519_keypair_t;
 
@@ -62,17 +35,9 @@ typedef struct {
   UT_hash_handle hh;
 } utxo_input_ht;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup UTXO_INPUT_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Initialize an utxo input hash table.
@@ -144,28 +109,8 @@ size_t utxo_inputs_serialization(utxo_input_ht **inputs, byte_t buf[]);
  */
 void utxo_inputs_print(utxo_input_ht **inputs);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

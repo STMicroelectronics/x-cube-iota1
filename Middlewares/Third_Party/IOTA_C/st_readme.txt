@@ -41,6 +41,12 @@
   @endverbatim
 
 =======
+### 01-December-2022 ###
+========================
+   + iota.c v0.4.0 (https://github.com/iotaledger/iota.c) customized version for STM32Cube solution.
+   + Introduce ThreadX wrapper for malloc
+
+=======
 ### 01-December-2021 ###
 ========================
    + iota.c v0.3.0 (https://github.com/iotaledger/iota.c) customized version for STM32Cube solution.

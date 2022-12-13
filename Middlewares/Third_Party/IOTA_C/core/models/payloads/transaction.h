@@ -14,35 +14,7 @@
 #include "core/models/unlock_block.h"
 #include "core/types.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CORE
- * @{
- */
-
-/** @addtogroup PAYLOADS
- * @{
- */
-
-/** @defgroup TRANSACTION Transaction
- * @{
- */
-
-/** @defgroup TRANSACTION_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
 static const uint64_t MAX_IOTA_SUPPLY = 2779530283277761;
-
-/**
- * @}
- */
-
-/** @defgroup TRANSACTION_EXPORTED_TYPES Exported Types
- * @{
- */
 
 /**
  * @brief Transaction Essence, the essence data making up a transaction by defining its inputs and outputs and an
@@ -74,24 +46,16 @@ typedef struct {
   unlock_blocks_t* unlock_blocks;  ///< Defines an unlock block containing signature(s) unlocking input(s).
 } transaction_payload_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup TRANSACTION_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Allocate a transaction essence object
  *
  * @return transaction_essence_t*
  */
-transaction_essence_t* tx_essence_new(void);
+transaction_essence_t* tx_essence_new();
 
 /**
  * @brief Add an input element to the essence
@@ -182,7 +146,7 @@ void tx_essence_sort_input_output(transaction_essence_t* es);
  *
  * @return transaction_payload_t*
  */
-transaction_payload_t* tx_payload_new(void);
+transaction_payload_t* tx_payload_new();
 
 /**
  * @brief Add an input to the transaction payload
@@ -268,28 +232,8 @@ void tx_payload_free(transaction_payload_t* tx);
  */
 void tx_payload_print(transaction_payload_t* tx);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

@@ -9,17 +9,10 @@ header-includes: <link rel="icon" type="image/x-icon" href="_htmresc/favicon.png
 
 <center>
 # Release Notes for HTS221 Component Driver
-Copyright &copy; 2021 STMicroelectronics\
+Copyright &copy; 2022 STMicroelectronics\
 
 [![ST logo](_htmresc/st_logo_2020.png)](https://www.st.com){.logo}
 </center>
-
-# License
-
-This software component is licensed by ST under BSD 3-Clause license, the "License".
-You may not use this component except in compliance with the License. You may obtain a copy of the License at:
-
-[BSD 3-Clause license](https://opensource.org/licenses/BSD-3-Clause)
 
 # Purpose
 
@@ -30,7 +23,23 @@ This directory contains the HTS221 component drivers.
 # Update history
 
 ::: {.collapse}
-<input type="checkbox" id="collapse-section14" checked aria-hidden="true">
+<input type="checkbox" id="collapse-section15" checked aria-hidden="true">
+<label for="collapse-section15" aria-hidden="true">V5.3.2 / 09-February-2022</label>
+<div>			
+
+## Main changes
+
+### Patch release
+
+- Update License to new format
+
+##
+
+</div>
+:::
+
+::: {.collapse}
+<input type="checkbox" id="collapse-section14" aria-hidden="true">
 <label for="collapse-section14" aria-hidden="true">V5.3.1 / 21-April-2021</label>
 <div>			
 

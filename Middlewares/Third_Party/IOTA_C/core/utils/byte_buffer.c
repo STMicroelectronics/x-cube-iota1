@@ -3,8 +3,10 @@
 
 #include <string.h>
 
-#include "allocator.h"
-#include "byte_buffer.h"
+#include "core/utils/allocator.h"
+#include "core/utils/byte_buffer.h"
+
+#include "app_azure_rtos_config.h"
 
 static char const* const hex_table = "0123456789ABCDEF";
 
@@ -86,7 +88,6 @@ int hex_2_bin(char const str[], size_t str_len, byte_t bin[], size_t bin_len) {
     bin[i] = v_h * 16 + v_l;
     pos += 2;
   }
-
   return 0;
 }
 
@@ -112,7 +113,7 @@ int bin_2_hex(byte_t const bin[], size_t bin_len, char str_buf[], size_t buf_len
   return 0;
 }
 
-byte_buf_t* byte_buf_new(void) {
+byte_buf_t* byte_buf_new() {
   byte_buf_t* buf = malloc(sizeof(byte_buf_t));
   if (buf) {
     buf->data = NULL;
@@ -255,6 +256,10 @@ byte_buf_t* byte_buf_clonen(byte_buf_t* buf, size_t len) {
 
   memcpy(clone->data, buf->data, len);
   return clone;
+}
+
+byte_buf_t* byte_buf_clone(byte_buf_t* buf) {
+  return byte_buf_clonen(buf, buf->len);
 }
 
 void byte_buf_print(byte_buf_t* buf) {

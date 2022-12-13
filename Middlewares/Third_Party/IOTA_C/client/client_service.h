@@ -4,9 +4,9 @@
 #ifndef __CLIENT_SERVICE_H__
 #define __CLIENT_SERVICE_H__
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #define IOTA_ENDPOINT_MAX_LEN 256
 

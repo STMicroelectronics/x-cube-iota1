@@ -7,14 +7,15 @@
 #include "client/api/json_utils.h"
 #include "client/api/v1/get_balance.h"
 #include "client/api/v1/response_error.h"
-#include "client/network/http_lib.h"
+#include "client/network/http.h"
 #include "core/utils/iota_str.h"
 
-res_balance_t *res_balance_new(void) {
+#include "app_azure_rtos_config.h"
+
+res_balance_t *res_balance_new() {
   res_balance_t *res = malloc(sizeof(res_balance_t));
   if (res) {
     res->is_error = false;
-    res->u.error = NULL;
     res->u.output_balance = NULL;
     return res;
   }
@@ -50,48 +51,47 @@ int deser_balance_info(char const *const j_str, res_balance_t *res) {
     res->u.error = res_err;
     ret = 0;
     goto end;
+  }
 
-  } else {
+  res->u.output_balance = malloc(sizeof(get_balance_t));
+  if (res->u.output_balance == NULL) {
+    printf("[%s:%d] OOM\n", __func__, __LINE__);
+    goto end;
+  }
 
-    res->u.output_balance = malloc(sizeof(get_balance_t));
-    if (res->u.output_balance == NULL) {
-      printf("[%s:%d] OOM\n", __func__, __LINE__);
-      goto end;
-
-    } else {
-    
-      cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
-      if (data_obj) {
-        // gets address type
-        if ((ret = json_get_uint8(data_obj, JSON_KEY_ADDR_TYPE, &res->u.output_balance->address_type)) != 0) {
-          printf("[%s:%d]: gets %s json max_results failed\n", __func__, __LINE__, JSON_KEY_ADDR_TYPE);
-          goto end;
-        }
-        
-        // gets address
-        if ((ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_balance->address, sizeof(res->u.output_balance->address))) != 0) {
-          res->u.output_balance->address[sizeof(res->u.output_balance->address)-1] = '\0';
-          printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR);
-          goto end;
-        }
-        
-        // gets balance
-        if ((ret = json_get_uint64(data_obj, JSON_KEY_BALANCE, &res->u.output_balance->balance)) != 0) {
-          printf("[%s:%d]: gets %s json balance failed\n", __func__, __LINE__, JSON_KEY_BALANCE);
-          goto end;
-        }
-        
-        // gets dust allowance
-        if ((ret = json_get_boolean(data_obj, JSON_KEY_DUST_ALLOWED, &res->u.output_balance->dust_allowed)) != 0) {
-          printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_DUST_ALLOWED);
-          goto end;
-        }
-        
-        // gets ledger index
-        if ((ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output_balance->ledger_idx)) != 0) {
-          printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);
-          goto end;
-        }
+  // AP: Add scope to get rid of warning due to goto label
+  {
+    cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
+    if (data_obj) {
+      // gets address type
+      if ((ret = json_get_uint8(data_obj, JSON_KEY_ADDR_TYPE, &res->u.output_balance->address_type)) != 0) {
+        printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR_TYPE);
+        goto end;
+      }
+      
+      // gets address
+      if ((ret = json_get_string(data_obj, JSON_KEY_ADDR, res->u.output_balance->address,
+                                 sizeof(res->u.output_balance->address))) != 0) {
+                                   printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_ADDR);
+                                   goto end;
+                                 }
+      
+      // gets balance
+      if ((ret = json_get_uint64(data_obj, JSON_KEY_BALANCE, &res->u.output_balance->balance)) != 0) {
+        printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_BALANCE);
+        goto end;
+      }
+      
+      // gets dust allowance
+      if ((ret = json_get_boolean(data_obj, JSON_KEY_DUST_ALLOWED, &res->u.output_balance->dust_allowed)) != 0) {
+        printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_DUST_ALLOWED);
+        goto end;
+      }
+      
+      // gets ledger index
+      if ((ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output_balance->ledger_idx)) != 0) {
+        printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);
+        goto end;
       }
     }
   }
@@ -103,9 +103,9 @@ end:
 
 int get_balance(iota_client_conf_t const *conf, bool is_bech32, char const addr[], res_balance_t *res) {
   int ret = -1;
-  http_context_t http_ctx;
-  http_response_t http_res;
-  memset(&http_res, 0, sizeof(http_response_t));
+
+  byte_buf_t *http_res = NULL;
+  long http_st = 0;
 
   if (addr == NULL || res == NULL || conf == NULL) {
     printf("[%s:%d]: get_balance failed (null parameter)\n", __func__, __LINE__);
@@ -133,50 +133,27 @@ int get_balance(iota_client_conf_t const *conf, bool is_bech32, char const addr[
     goto done;
   }
 
-  // allocate response
-  http_res.body = byte_buf_new();
-  if (http_res.body == NULL) {
-    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
-    goto done;
-  }
-  http_res.code = 0;
-
   // http client configuration
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd_buffer, 
-  http_ctx.use_tls = conf->use_tls;
-  http_ctx.port = conf->port;
-  
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
-    goto done;
-  }
-
-  // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  NULL);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
-    // json deserialization
-    ret = deser_balance_info((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
   {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    http_client_config_t http_conf = {
+      .host = conf->host, .path = cmd_buffer, .use_tls = conf->use_tls, .port = conf->port};
+    
+    if ((http_res = byte_buf_new()) == NULL) {
+      printf("[%s:%d]: OOM\n", __func__, __LINE__);
+      goto done;
+    }
+    
+    // send request via http client
+    if ((ret = http_client_get(&http_conf, http_res, &http_st)) == 0) {
+      byte_buf2str(http_res);
+      // json deserialization
+      ret = deser_balance_info((char const *)http_res->data, res);
+    }
   }
 
 done:
   // cleanup command
-  byte_buf_free(http_res.body);
+  byte_buf_free(http_res);
 
   return ret;
 }

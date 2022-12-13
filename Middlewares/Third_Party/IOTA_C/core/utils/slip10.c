@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Reference: https://github.com/satoshilabs/slips/blob/master/slip-0010.md
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,11 +14,7 @@
 
 #ifndef htonl
 #if ((__BYTE_ORDER__) == (__ORDER_LITTLE_ENDIAN__))
-
-#define htonl(x) ( ((x)<<24 & 0xFF000000UL) | \
-                   ((x)<< 8 & 0x00FF0000UL) | \
-                   ((x)>> 8 & 0x0000FF00UL) | \
-                   ((x)>>24 & 0x000000FFUL) )
+#define htonl(x) ((((x)&0xff) << 24) | (((x)&0xff00) << 8) | (((x)&0xff0000UL) >> 8) | (((x)&0xff000000UL) >> 24))
 #else
 #define htonl(x) (x)
 #endif
@@ -26,8 +23,7 @@
 // creates a new master private extended key for the curve from a seed.
 static void master_key_generation(byte_t seed[], size_t seed_len, slip10_curve_t curve, slip10_key_t* key) {
   byte_t I[CRYPTO_SHA512_HASH_BYTES];
-  char curve_key[CRYPTO_SHA512_KEY_BYTES];
-  memset(curve_key, 0, sizeof(curve_key));
+  char curve_key[CRYPTO_SHA512_KEY_BYTES] = {0};
   // Calculate I = HMAC-SHA512(Key = Curve, Data = seed)
   if (curve == SECP256K1_CURVE) {
     strcpy(curve_key, "Bitcoin seed");
@@ -46,8 +42,7 @@ static void master_key_generation(byte_t seed[], size_t seed_len, slip10_curve_t
 
 static void private_ckd(slip10_key_t* key, uint32_t index, byte_t I[]) {
   // I = HMAC-SHA512(Key = c_par, Data = 0x00 || ser_256(k_par) || ser_32(i))
-  byte_t priv_data[37];
-  memset(priv_data, 0, sizeof(priv_data));
+  byte_t priv_data[37] = {0};
   int priv_data_len = 0;
   if (index >= BIP32_HARDENED) {
     // data = 0x00 + key
@@ -66,8 +61,7 @@ static void private_ckd(slip10_key_t* key, uint32_t index, byte_t I[]) {
 // derives a child extended private key from a given parent extended private key as outlined by SLIP-10.
 static void child_key_derivation(uint32_t index, slip10_key_t* key) {
   // private parent key -> private child key
-  byte_t I[64];
-  memset(I, 0, sizeof(I));
+  byte_t I[64] = {0};
   private_ckd(key, index, I);
 
   // Split I into two 32-byte sequences, I_L and I_R
@@ -128,7 +122,7 @@ int slip10_parse_path(char str[], bip32_path_t* path) {
     token = strtok(NULL, "/");
     path->len += 1;
 
-    if (path->len >= MAX_BIP32_PATH) {
+    if (path->len >= MAX_PIB32_PATH) {
       // path too long
       ret = -3;
       goto end;
@@ -145,8 +139,7 @@ int slip10_key_from_path(byte_t seed[], size_t seed_len, char path[], slip10_cur
     return -1;
   }
 
-  bip32_path_t bip32_path;
-  memset(&bip32_path, 0, sizeof(bip32_path_t));
+  bip32_path_t bip32_path = {0};
   if (slip10_parse_path(path, &bip32_path) != 0) {
     // invalid path
     return -2;
@@ -171,8 +164,7 @@ int slip10_public_key(slip10_curve_t curve, slip10_key_t* key, byte_t pub_key[])
     return -1;
   }
   // public key
-  iota_keypair_t keypair;
-  memset(&keypair, 0, sizeof(iota_keypair_t));
+  iota_keypair_t keypair = {0};
   iota_crypto_keypair(key->key, &keypair);
   // match the required public key size, SLIP10_PUBLIC_KEY_BYTES
   pub_key[0] = 0x00;

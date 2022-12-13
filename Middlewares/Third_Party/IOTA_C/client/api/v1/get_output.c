@@ -5,14 +5,13 @@
 
 #include "client/api/json_utils.h"
 #include "client/api/v1/get_output.h"
-#include "client/network/http_lib.h"
+#include "client/network/http.h"
 #include "core/utils/iota_str.h"
 
 int get_output(iota_client_conf_t const *conf, char const output_id[], res_output_t *res) {
   int ret = -1;
-  http_context_t http_ctx;
-  http_response_t http_res;
-  memset(&http_res, 0, sizeof(http_response_t));
+  long st = 0;
+  byte_buf_t *http_res = NULL;
   // cmd length = "/api/v1/outputs/" + IOTA_OUTPUT_ID_HEX_STR
   char cmd_buffer[85] = {0};
 
@@ -30,50 +29,25 @@ int get_output(iota_client_conf_t const *conf, char const output_id[], res_outpu
   // composing API command
   snprintf(cmd_buffer, sizeof(cmd_buffer), "/api/v1/outputs/%s", output_id);
 
-  // allocate response
-  http_res.body = byte_buf_new();
-  if (http_res.body == NULL) {
-    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
-    goto done;
-  }
-  http_res.code = 0;
-
   // http client configuration
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd_buffer;
-  http_ctx.use_tls = conf->use_tls;
-  http_ctx.port = conf->port;
+  http_client_config_t http_conf = {
+      .host = conf->host, .path = cmd_buffer, .use_tls = conf->use_tls, .port = conf->port};
 
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+  if ((http_res = byte_buf_new()) == NULL) {
+    printf("[%s:%d]: OOM\n", __func__, __LINE__);
     goto done;
   }
 
   // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  NULL);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
+  if ((ret = http_client_get(&http_conf, http_res, &st)) == 0) {
+    byte_buf2str(http_res);
     // json deserialization
-    ret = deser_get_output((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
-  {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    ret = deser_get_output((char const *)http_res->data, res);
   }
 
 done:
   // cleanup command
-  byte_buf_free(http_res.body);
+  byte_buf_free(http_res);
   return ret;
 }
 
@@ -96,8 +70,10 @@ int deser_get_output(char const *const j_str, res_output_t *res) {
     res->u.error = res_err;
     ret = 0;
     goto end;
-  } else {
+  }
 
+  // AP: Add scope to get rid of warning due to goto label
+  {
     cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
     if (data_obj) {
       // message ID
@@ -123,7 +99,7 @@ int deser_get_output(char const *const j_str, res_output_t *res) {
         printf("[%s:%d]: gets %s json bool failed\n", __func__, __LINE__, JSON_KEY_IS_SPENT);
         goto end;
       }
-
+      
       // ledgerIndex
       if ((ret = json_get_uint64(data_obj, JSON_KEY_LEDGER_IDX, &res->u.output.ledger_idx)) != 0) {
         printf("[%s:%d]: gets %s json uint64 failed\n", __func__, __LINE__, JSON_KEY_LEDGER_IDX);

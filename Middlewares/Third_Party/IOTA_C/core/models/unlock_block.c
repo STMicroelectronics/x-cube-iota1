@@ -8,11 +8,13 @@
 
 #include "utlist.h"
 
-#include "unlock_block.h"
+#include "core/models/unlock_block.h"
+
+#include "app_azure_rtos_config.h"
 
 #define UNLOCKED_BLOCKS_MAX_COUNT 126
 
-unlock_blocks_t* unlock_blocks_new(void) { return NULL; }
+unlock_blocks_t* unlock_blocks_new() { return NULL; }
 
 int unlock_blocks_add_signature(unlock_blocks_t** blocks, byte_t* sig, size_t sig_len) {
   if (sig == NULL || sig_len != ED25519_SIGNATURE_BLOCK_BYTES) {

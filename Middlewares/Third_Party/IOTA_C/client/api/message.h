@@ -11,26 +11,6 @@
 #include "core/utils/byte_buffer.h"
 #include "utarray.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup MESSAGE Message
- * @{
- */
-
-/** @defgroup MESSAGE_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
 #define API_MSG_ID_HEX_STR_LEN (64 + 1)
 #define API_TX_ID_HEX_STR_LEN (64 + 1)
 #define API_ADDR_HEX_STR_LEN (64 + 1)
@@ -38,19 +18,11 @@
 #define API_SIGNATURE_HEX_STR_LEN (128 + 1)
 #define API_SIGNATURE_BLOCK_STR_LEN (1 + API_PUB_KEY_HEX_STR_LEN + API_SIGNATURE_HEX_STR_LEN)
 
-/**
- * @}
- */
-
-/** @defgroup MESSAGE_EXPORTED_TYPES Exported Types
- * @{
- */
-
 typedef enum {
   MSG_PAYLOAD_TRANSACTION = 0,
   MSG_PAYLOAD_MILESTONE,
   MSG_PAYLOAD_INDEXATION,
-  MSG_PAYLOAD_UNKNOW
+  MSG_PAYLOAD_UNKNOW = -1,
 } msg_payload_type_t;
 
 // TODO update mileestone structure: https://github.com/iotaledger/protocol-rfcs/pull/19
@@ -76,6 +48,10 @@ typedef struct {
   char address[API_ADDR_HEX_STR_LEN];
 } payload_tx_output_t;
 
+/**
+ * @brief An unlocked block in strings
+ *
+ */
 typedef struct {
   uint8_t block_type;  ///< 0 denotes a Signature Unlock Block, 1 denotes a Reference Unlock Block.
   uint16_t reference;  ///< Represents the index of a pervious unlock block
@@ -106,24 +82,16 @@ typedef struct {
   void *payload;             ///< NULL if no payload
 } message_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup MESSAGE_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Allocate a transaction payload object
  *
  * @return payload_tx_t*
  */
-payload_tx_t *payload_tx_new(void);
+payload_tx_t *payload_tx_new();
 
 /**
  * @brief Free a transaction payload object
@@ -137,7 +105,7 @@ void payload_tx_free(payload_tx_t *tx);
  *
  * @return payload_milestone_t*
  */
-payload_milestone_t *payload_milestone_new(void);
+payload_milestone_t *payload_milestone_new();
 
 /**
  * @brief Free a milestone payload object
@@ -151,7 +119,7 @@ void payload_milestone_free(payload_milestone_t *ms);
  *
  * @return payload_index_t*
  */
-payload_index_t *payload_index_new(void);
+payload_index_t *payload_index_new();
 
 /**
  * @brief Free an indexcation payload object
@@ -165,7 +133,7 @@ void payload_index_free(payload_index_t *idx);
  *
  * @return message_t*
  */
-message_t *api_message_new(void);
+message_t *api_message_new();
 
 /**
  * @brief Free a message object
@@ -305,28 +273,8 @@ int payload_tx_add_ref_block(payload_tx_t const *const tx, uint16_t ref);
  */
 uint16_t payload_tx_blocks_reference(payload_tx_t const *const tx, size_t index);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

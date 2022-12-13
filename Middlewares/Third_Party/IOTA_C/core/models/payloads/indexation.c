@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "indexation.h"
+#include "core/models/payloads/indexation.h"
 
-indexation_t *indexation_new(void) {
+#include "app_azure_rtos_config.h"
+
+indexation_t *indexation_new() {
   indexation_t *idx = malloc(sizeof(indexation_t));
   if (idx) {
     idx->index = NULL;

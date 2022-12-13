@@ -10,32 +10,8 @@
 #include "core/types.h"
 #include "uthash.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CORE
- * @{
- */
-
-/** @defgroup OUTPUTS Outputs
- * @{
- */
-
-/** @defgroup OUTPUTS_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
 // Serialized bytes = output type(uint8_t) + address type(uint8_t) + ed25519 address(32bytes) + amount(uint64_t)
 #define UTXO_OUTPUT_SERIALIZED_BYTES (1 + 1 + ED25519_ADDRESS_BYTES + 8)
-
-/**
- * @}
- */
-
-/** @defgroup OUTPUTS_EXPORTED_TYPES Exported Types
- * @{
- */
 
 /**
  * @brief Output types
@@ -64,17 +40,9 @@ typedef struct {
   UT_hash_handle hh;
 } outputs_ht;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup OUTPUTS_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Initialize an utxo output hash table.
@@ -134,24 +102,8 @@ size_t utxo_outputs_serialization(outputs_ht **ht, byte_t buf[]);
  */
 void utxo_outputs_print(outputs_ht **ht);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

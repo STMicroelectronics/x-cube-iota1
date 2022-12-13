@@ -138,13 +138,14 @@ int sodium_munlock(void * const addr, const size_t len)
  * state = sodium_malloc(crypto_generichash_statebytes());
  */
 
+#define malloc SysAlloc
 SODIUM_EXPORT
-void *sodium_malloc(const size_t size)
-            __attribute__ ((malloc));
+void *sodium_malloc(const size_t size);
+//            __attribute__ ((malloc));
 
 SODIUM_EXPORT
-void *sodium_allocarray(size_t count, size_t size)
-            __attribute__ ((malloc));
+void *sodium_allocarray(size_t count, size_t size);
+//            __attribute__ ((malloc));
 
 SODIUM_EXPORT
 void sodium_free(void *ptr);

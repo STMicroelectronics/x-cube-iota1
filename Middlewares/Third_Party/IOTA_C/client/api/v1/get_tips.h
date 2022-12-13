@@ -8,38 +8,12 @@
 #include <stdint.h>
 
 #include "utarray.h"
+
 #include "client/api/v1/response_error.h"
 #include "client/client_service.h"
-
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup GET_TIPS Get Tips
- * @{
- */
-
-/** @defgroup GET_TIPS_EXPORTED_TYPES Exported Constants
- * @{
- */
+#include "client/network/http.h"
 
 #define STR_TIP_MSG_ID_LEN 64  // the length of message id string
-
-/**
- * @}
- */
-
-/** @defgroup GET_TIPS_EXPORTED_TYPES Exported Types
- * @{
- */
 
 typedef UT_array get_tips_t;
 
@@ -55,17 +29,9 @@ typedef struct {
   } u;
 } res_tips_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup GET_TIPS_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Gets tips
@@ -109,7 +75,7 @@ int deser_get_tips(char const *const j_str, res_tips_t *res);
  *
  * @return res_tips_t*
  */
-res_tips_t *res_tips_new(void);
+res_tips_t *res_tips_new();
 
 /**
  * @brief Free a get_tips response object
@@ -118,28 +84,8 @@ res_tips_t *res_tips_new(void);
  */
 void res_tips_free(res_tips_t *tips);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

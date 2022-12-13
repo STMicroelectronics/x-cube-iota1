@@ -5,8 +5,10 @@
 
 #include "utlist.h"
 
-#include "json_utils.h"
-#include "message_builder.h"
+#include "client/api/json_utils.h"
+#include "client/api/message_builder.h"
+
+#include "app_azure_rtos_config.h"
 
 // serialize indexation payload to a JSON object
 static cJSON* indexation_to_json(indexation_t* index) {
@@ -90,8 +92,7 @@ static cJSON* tx_inputs_to_json(transaction_essence_t* es) {
     }
   ]
   */
-  char tx_id_str[TRANSACTION_ID_BYTES * 2 + 1];
-  memset(tx_id_str, 0, sizeof(tx_id_str));
+  char tx_id_str[TRANSACTION_ID_BYTES * 2 + 1] = {0};
   cJSON* input_arr = NULL;
 
   if (!es->inputs) {
@@ -165,8 +166,7 @@ static cJSON* tx_outputs_to_json(transaction_essence_t* es) {
     }
   ]
   */
-  char addr_str[ED25519_ADDRESS_BYTES * 2 + 1];
-  memset(addr_str, 0, sizeof(addr_str));
+  char addr_str[ED25519_ADDRESS_BYTES * 2 + 1] = {0};
   cJSON* output_arr = NULL;
 
   if (!es->outputs) {
@@ -339,10 +339,8 @@ static cJSON* tx_blocks_to_json(unlock_blocks_t* blocks) {
     }
   ]
   */
-  char pub_str[ED_PUBLIC_KEY_BYTES * 2 + 1];
-  memset(pub_str, 0, sizeof(pub_str));
-  char sig_str[ED_PRIVATE_KEY_BYTES * 2 + 1];
-  memset(pub_str, 0, sizeof(pub_str));
+  char pub_str[ED_PUBLIC_KEY_BYTES * 2 + 1] = {0};
+  char sig_str[ED_PRIVATE_KEY_BYTES * 2 + 1] = {0};
   cJSON* block_arr = NULL;
 
   if (!blocks) {
@@ -513,8 +511,7 @@ char* message_to_json(core_message_t* msg) {
   cJSON* msg_obj = NULL;
   cJSON* payload = NULL;
   cJSON* parents = NULL;
-  char tmp_id_str[IOTA_MESSAGE_ID_BYTES * 2 + 1];
-  memset(tmp_id_str, 0, sizeof(tmp_id_str));
+  char tmp_id_str[IOTA_MESSAGE_ID_BYTES * 2 + 1] = {0};
 
   if (!msg) {
     printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
@@ -551,11 +548,9 @@ char* message_to_json(core_message_t* msg) {
 
   cJSON_AddItemToObject(msg_obj, JSON_KEY_PARENT_IDS, parents);
   byte_t* p = NULL;
-  p = (byte_t*)utarray_next(msg->parents, p);
-  while (p != NULL) {
+  while ((p = (byte_t*)utarray_next(msg->parents, p))) {
     bin_2_hex(p, IOTA_MESSAGE_ID_BYTES, tmp_id_str, sizeof(tmp_id_str));
     cJSON_AddItemToArray(parents, cJSON_CreateString(tmp_id_str));
-    p = (byte_t*)utarray_next(msg->parents, p);
   }
 
   // add payload

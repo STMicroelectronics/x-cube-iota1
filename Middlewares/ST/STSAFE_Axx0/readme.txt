@@ -7,7 +7,7 @@
   */
 
 This module is not directly available on GitHub as it is subject to a restrictive
-license requiring user's approval via a "click thu" procedure.
+license requiring user's approval via a "click thru" procedure.
 
 To obtain it, please visit our website st.com to download the full firmware package
 containing the module via the link below.

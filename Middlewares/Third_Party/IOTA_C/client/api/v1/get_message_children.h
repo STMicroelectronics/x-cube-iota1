@@ -12,26 +12,6 @@
 #include "core/models/models_message.h"
 #include "core/types.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup GET_MESSAGE_CHILDREN Get Message Children
- * @{
- */
-
-/** @defgroup GET_MESSAGE_CHILDREN_EXPORTED_TYPES Exported Types
- * @{
- */
-
 /**
  * @brief The message children object.
  *
@@ -55,23 +35,14 @@ typedef struct {
   } u;
 } res_msg_children_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup GET_MESSAGE_CHILDREN_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
-
 /**
  * @brief Allocates message children response
  * @return res_msg_children_t*
  */
-res_msg_children_t *res_msg_children_new(void);
+res_msg_children_t *res_msg_children_new();
 
 /**
  * @brief Frees a message children reponse object
@@ -115,28 +86,8 @@ char *res_msg_children_get(res_msg_children_t *res, size_t index);
  */
 int get_message_children(iota_client_conf_t const *ctx, char const msg_id[], res_msg_children_t *res);
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif  // __CLIENT_API_V1_MSG_CHILDREN_H__

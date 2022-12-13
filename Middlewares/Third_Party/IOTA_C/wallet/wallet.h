@@ -21,33 +21,13 @@
 #include "core/seed.h"
 #include "core/types.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @defgroup WALLET Wallet
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @defgroup WALLET_EXPORTED_CONSTANTS Exported Constants
- * @{
- */
-
 #define NODE_DEFAULT_HRP "iota"
 #define NODE_DEFAULT_HOST "chrysalis-nodes.iota.org"
 #define NODE_DEFAULT_PORT 443
-
-/**
- * @}
- */
-
-/** @defgroup WALLET_EXPORTED_TYPES Exported Types
- * @{
- */
 
 /**
  * @brief IOTA wallet setting
@@ -59,14 +39,6 @@ typedef struct {
   uint32_t account_index;       ///< wallet account index
   iota_client_conf_t endpoint;  ///< IOTA node endpoint
 } iota_wallet_t;
-
-/**
- * @}
- */
-
-/** @defgroup WALLET_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Create a wallet instance from the given mnemonic, password, and account index
@@ -179,13 +151,5 @@ int wallet_balance_by_bech32(iota_wallet_t* w, char const bech32[], uint64_t* ba
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

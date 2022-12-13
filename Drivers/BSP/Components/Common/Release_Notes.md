@@ -14,14 +14,6 @@ Copyright &copy; 2014 STMicroelectronics\
 [![ST logo](_htmresc/st_logo.png)](https://www.st.com){.logo}
 </center>
 
-# License
-
-This software component is licensed by ST under BSD 3-Clause license, the "License"; You may not use this component except in
-compliance with the License. You may obtain a copy of the License at:
-<center>
-[https://opensource.org/licenses/BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)
-</center>
-
 # Purpose
 
 This directory contains the BSP Common components drivers.
@@ -32,9 +24,37 @@ This directory contains the BSP Common components drivers.
 # Update History
 
 ::: {.collapse}
-<input type="checkbox" id="collapse-section17" checked aria-hidden="true">
+<input type="checkbox" id="collapse-section19" checked aria-hidden="true">
+<label for="collapse-section19" aria-hidden="true">V7.2.1 / 16-November-2021</label>
+<div>
+
+## Main Changes
+
+### Component release
+
+-  Update licensing
+
+</div>
+:::
+
+::: {.collapse}
+<input type="checkbox" id="collapse-section18" aria-hidden="true">
+<label for="collapse-section18" aria-hidden="true">V7.2.0 / 11-October-2021</label>
+<div>
+
+## Main Changes
+
+### Component release
+
+-	Add hybrid_sensor.h to support hybrid (env and motion) sensors
+
+</div>
+:::
+
+::: {.collapse}
+<input type="checkbox" id="collapse-section17" aria-hidden="true">
 <label for="collapse-section17" aria-hidden="true">V7.1.0 / 18-Juin-2021</label>
-<div>			
+<div>
 
 ## Main Changes
 
@@ -55,7 +75,7 @@ This directory contains the BSP Common components drivers.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section16" aria-hidden="true">
 <label for="collapse-section16" aria-hidden="true">V7.0.0 / 25-February-2020</label>
-<div>			
+<div>
 
 ## Main Changes
 
@@ -73,7 +93,7 @@ This directory contains the BSP Common components drivers.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section15" aria-hidden="true">
 <label for="collapse-section15" aria-hidden="true">V6.0.1 / 15-October-2019</label>
-<div>			
+<div>
 
 ## Main Changes
 
@@ -87,7 +107,7 @@ This directory contains the BSP Common components drivers.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section14" aria-hidden="true">
 <label for="collapse-section14" aria-hidden="true">V6.0.0 / 12-April-2019</label>
-<div>			
+<div>
 
 ## Main Changes
 
@@ -105,7 +125,7 @@ This release breaks compatibility with previous versions.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section13" aria-hidden="true">
 <label for="collapse-section13" aria-hidden="true">V5.1.1 / 31-August-2018</label>
-<div>			
+<div>
 
 ## Main Changes
 Reformat the BSD 3-Clause license declaration in the files header (replace license terms by a web reference to OSI website where those terms lie)  
@@ -117,7 +137,7 @@ Correct sensor names in headers files hsensor.h and psensor.h
 ::: {.collapse}
 <input type="checkbox" id="collapse-section12" aria-hidden="true">
 <label for="collapse-section12" aria-hidden="true">V5.1.0 / 21-November-2017</label>
-<div>			
+<div>
 
 ## Main Changes
 Add dpredriver.h: support of DP redriver class  
@@ -130,7 +150,7 @@ Add usbtypecswitch.h: support of USB type C switch class
 ::: {.collapse}
 <input type="checkbox" id="collapse-section11" aria-hidden="true">
 <label for="collapse-section11" aria-hidden="true">V5.0.0 / 01-March-2017</label>
-<div>			
+<div>
 
 ## Main Changes
 Add hsensor.h: support of humidity class  
@@ -149,7 +169,7 @@ This release breaks compatibility with previous versions.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section10" aria-hidden="true">
 <label for="collapse-section10" aria-hidden="true">V4.0.1 / 21-July-2015</label>
-<div>			
+<div>
 
 ## Main Changes
 tsensor.h: Fix compilation issue on *TSENSOR_InitTypeDef*
@@ -160,7 +180,7 @@ tsensor.h: Fix compilation issue on *TSENSOR_InitTypeDef*
 ::: {.collapse}
 <input type="checkbox" id="collapse-section9" aria-hidden="true">
 <label for="collapse-section9" aria-hidden="true">V4.0.0 / 22-June-2015</label>
-<div>			
+<div>
 
 ## Main Changes
 accelero.h: add *DeInit* field in *ACCELERO_DrvTypeDef* structure  
@@ -182,7 +202,7 @@ This release breaks compatibility with previous versions.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section8" aria-hidden="true">
 <label for="collapse-section8" aria-hidden="true">V3.0.0 / 28-April-2015</label>
-<div>			
+<div>
 
 ## Main Changes
 
@@ -205,7 +225,7 @@ This release breaks compatibility with previous versions.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section7" aria-hidden="true">
 <label for="collapse-section7" aria-hidden="true">V2.2.0 / 09-February-2015</label>
-<div>						
+<div>
 
 ## Main Changes
 
@@ -218,7 +238,7 @@ Update "idd.h" file to provide DeInit() and WakeUp() services in IDD current mea
 ::: {.collapse}
 <input type="checkbox" id="collapse-section6" aria-hidden="true">
 <label for="collapse-section6" aria-hidden="true">V2.1.0 / 06-February-2015</label>
-<div>						
+<div>
 
 ## Main Changes
 
@@ -231,7 +251,7 @@ io.h: add new typedef enum IO_PinState with IO_PIN_RESET and IO_PIN_SET values
 ::: {.collapse}
 <input type="checkbox" id="collapse-section5" aria-hidden="true">
 <label for="collapse-section5" aria-hidden="true">V2.0.0 / 15-December-2014</label>
-<div>			
+<div>
 
 ## Main Changes
 
@@ -253,7 +273,7 @@ This release breaks compatibility with previous versions.
 ::: {.collapse}
 <input type="checkbox" id="collapse-section4" aria-hidden="true">
 <label for="collapse-section4" aria-hidden="true">V1.2.1 / 02-December-2014</label>
-<div>			
+<div>
 
 ## Main Changes
 gyro.h: change “__GIRO_H” by “__GYRO_H” to fix compilation issue under Mac OS  
@@ -264,7 +284,7 @@ gyro.h: change “__GIRO_H” by “__GYRO_H” to fix compilation issue under M
 ::: {.collapse}
 <input type="checkbox" id="collapse-section3" aria-hidden="true">
 <label for="collapse-section3" aria-hidden="true">V1.2.0 / 18-June-2014</label>
-<div>			
+<div>
 
 ## Main Changes
 EPD (E Paper Display)  driver function prototype added (epd.h file)  
@@ -275,7 +295,7 @@ EPD (E Paper Display)  driver function prototype added (epd.h file)
 ::: {.collapse}
 <input type="checkbox" id="collapse-section2" aria-hidden="true">
 <label for="collapse-section2" aria-hidden="true">V1.1.0 / 21-March-2014</label>
-<div>			
+<div>
 
 ## Main Changes
 Temperature Sensor driver function prototype added  
@@ -286,7 +306,7 @@ Temperature Sensor driver function prototype added
 ::: {.collapse}
 <input type="checkbox" id="collapse-section1" aria-hidden="true">
 <label for="collapse-section1" aria-hidden="true">V1.0.0 / 18-February-2014</label>
-<div>			
+<div>
 
 ## Main Changes
 First official release with Accelerometer, Audio, Camera, Gyroscope, IO, LCD and Touch Screen drivers function prototypes  

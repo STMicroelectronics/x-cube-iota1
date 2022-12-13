@@ -25,7 +25,7 @@
 
 #include "string.h"
 
-#include "bech32.h"
+#include "core/utils/bech32.h"
 
 // A Bech32[2] string is at most 90 characters long and consists of: [HRP, "1", data]
 #define BECH32_MAX_STRING_LEN 90

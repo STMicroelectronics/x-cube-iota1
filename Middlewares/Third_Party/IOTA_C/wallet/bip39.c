@@ -6,8 +6,8 @@
 #include "crypto/iota_crypto.h"
 #include "utf8proc.h"
 #include "wallet/bip39.h"
-#ifndef BIP39_ENGLISH_ONLY
 
+#ifndef BIP39_ENGLISH_ONLY
 #include "wallet/wordlists/chinese_simplified.h"
 #include "wallet/wordlists/chinese_traditional.h"
 #include "wallet/wordlists/czech.h"
@@ -82,8 +82,8 @@ static size_t word_index(byte_t const entropy[], size_t n) {
  * @return int 0 on success
  */
 static int index_from_entropy(byte_t const entropy[], ms_entropy_t entropy_len, ms_index_t *ms_index) {
-  byte_t checksum_buf[CRYPTO_SHA256_HASH_BYTES] = {0};
-  byte_t ENT_buf[BIP39_MAX_ENT_CS_BYTES] = {0};
+  byte_t checksum_buf[CRYPTO_SHA256_HASH_BYTES] = {};
+  byte_t ENT_buf[BIP39_MAX_ENT_CS_BYTES] = {};
   uint8_t checksum = 0;
   uint8_t checksum_mask = 0x0;
   uint8_t ms_len = 0;
@@ -129,7 +129,7 @@ static int index_from_entropy(byte_t const entropy[], ms_entropy_t entropy_len, 
     return -1;
   }
 
-  //uint8_t ent_cs_len = entropy_len + 1;
+  uint8_t ent_cs_len = entropy_len + 1;
   checksum = checksum_buf[0] & checksum_mask;
   // final entropy with checksum
   memcpy(ENT_buf, entropy, entropy_len);
@@ -239,7 +239,7 @@ size_t mnemonic_decode(char const ms_strs[], ms_lan_t lan, byte_t entropy[], siz
   // get corresponding wordlist
   word_t *word_table = get_lan_table(lan);
   // index of ms
-  ms_index_t ms = {0};
+  ms_index_t ms = {};
 
   // cleanup, bits are zero for writing
   memset(entropy, 0, ent_len);
@@ -265,7 +265,7 @@ size_t mnemonic_decode(char const ms_strs[], ms_lan_t lan, byte_t entropy[], siz
 }
 
 int mnemonic_encode(byte_t const entropy[], ms_entropy_t ent_len, ms_lan_t lan, char ms_out[], size_t ms_len) {
-  ms_index_t ms = {0};
+  ms_index_t ms = {};
 
   if (entropy == NULL || ms_out == NULL) {
     printf("[%s:%d] invalid parameters\n", __func__, __LINE__);
@@ -298,7 +298,7 @@ int mnemonic_encode(byte_t const entropy[], ms_entropy_t ent_len, ms_lan_t lan, 
 }
 
 int mnemonic_generator(ms_entropy_t ent_len, ms_lan_t lang, char ms[], size_t ms_len) {
-  byte_t ent_tmp[MS_ENTROPY_256] = {0};
+  byte_t ent_tmp[MS_ENTROPY_256] = {};
   iota_crypto_randombytes(ent_tmp, MS_ENTROPY_256);
   return mnemonic_encode(ent_tmp, ent_len, lang, ms, ms_len);
 }
@@ -362,7 +362,7 @@ int mnemonic_convertor(char const from[], ms_lan_t lan_from, char to[], size_t t
   printf("[%s:%d] not supported\n", __func__, __LINE__);
   return -1;
 #else
-  byte_t ent[BIP39_MAX_ENT_CS_BYTES] = {0};
+  byte_t ent[BIP39_MAX_ENT_CS_BYTES] = {};
   size_t ent_len = mnemonic_decode(from, lan_from, ent, sizeof(ent));
   if (ent_len == 0) {
     printf("[%s:%d] mnemonic decode error\n", __func__, __LINE__);
@@ -373,7 +373,7 @@ int mnemonic_convertor(char const from[], ms_lan_t lan_from, char to[], size_t t
 }
 
 bool mnemonic_validation(char const ms[], ms_lan_t language) {
-  byte_t ent[BIP39_MAX_ENT_CS_BYTES] = {0};
+  byte_t ent[BIP39_MAX_ENT_CS_BYTES] = {};
   size_t ent_len = mnemonic_decode(ms, language, ent, sizeof(ent));
   return ent_len ? true : false;
 }

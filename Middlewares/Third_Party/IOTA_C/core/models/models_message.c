@@ -9,9 +9,11 @@
 
 #include "core/models/models_message.h"
 
+#include "app_azure_rtos_config.h"
+
 static const UT_icd ut_msg_id_icd = {sizeof(uint8_t) * IOTA_MESSAGE_ID_BYTES, NULL, NULL, NULL};
 
-core_message_t* core_message_new(void) {
+core_message_t* core_message_new() {
   core_message_t* msg = malloc(sizeof(core_message_t));
   if (msg) {
     msg->network_id = 0;
@@ -25,8 +27,7 @@ core_message_t* core_message_new(void) {
 
 int core_message_sign_transaction(core_message_t* msg) {
   int ret = -1;
-  byte_t essence_hash[CRYPTO_BLAKE2B_HASH_BYTES];
-  memset(essence_hash, 0, sizeof(essence_hash));
+  byte_t essence_hash[CRYPTO_BLAKE2B_HASH_BYTES] = {0};
   if (!msg) {
     printf("[%s:%d] invalid parameter\n", __func__, __LINE__);
     return -1;
@@ -64,30 +65,27 @@ int core_message_sign_transaction(core_message_t* msg) {
   utxo_input_ht *elm, *tmp;
   HASH_ITER(hh, tx->essence->inputs, elm, tmp) {
     // create a ref block, if public key exists in unlocked_sig
-    int32_t pub_index = unlock_blocks_find_pub(tx->unlock_blocks, elm->keypair.pub_key);
+    uint32_t pub_index = unlock_blocks_find_pub(tx->unlock_blocks, elm->keypair.pub_key);
     if (pub_index == -1) {
       // publick key is not found in the unlocked block
-      byte_t sig_block[ED25519_SIGNATURE_BLOCK_BYTES];
-      memset(sig_block, 0, sizeof(sig_block));
+      byte_t sig_block[ED25519_SIGNATURE_BLOCK_BYTES] = {0};
       sig_block[0] = ADDRESS_VER_ED25519;
       memcpy(sig_block + 1, elm->keypair.pub_key, ED_PUBLIC_KEY_BYTES);
       // sign transaction
-      ret = iota_crypto_sign(elm->keypair.priv, essence_hash, CRYPTO_BLAKE2B_HASH_BYTES, sig_block + (1 + ED_PUBLIC_KEY_BYTES));
-      if (ret) {
+      if ((ret = iota_crypto_sign(elm->keypair.priv, essence_hash, CRYPTO_BLAKE2B_HASH_BYTES,
+                                  sig_block + (1 + ED_PUBLIC_KEY_BYTES)))) {
         printf("[%s:%d] signing signature failed\n", __func__, __LINE__);
         break;
       }
 
       // create a signature block
-      ret = unlock_blocks_add_signature(&tx->unlock_blocks, sig_block, ED25519_SIGNATURE_BLOCK_BYTES);
-      if (ret) {
+      if ((ret = unlock_blocks_add_signature(&tx->unlock_blocks, sig_block, ED25519_SIGNATURE_BLOCK_BYTES))) {
         printf("[%s:%d] Add signature block failed\n", __func__, __LINE__);
         break;
       }
     } else {
       // public key is found in the unlocked block
-      ret = unlock_blocks_add_reference(&tx->unlock_blocks, (uint16_t)pub_index);
-      if (ret) {
+      if ((ret = unlock_blocks_add_reference(&tx->unlock_blocks, (uint16_t)pub_index))) {
         printf("[%s:%d] Add reference block failed\n", __func__, __LINE__);
         break;
       }

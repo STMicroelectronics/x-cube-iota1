@@ -8,6 +8,8 @@
 #include "client/api/v1/response_error.h"
 #include "core/utils/allocator.h"
 
+#include "app_azure_rtos_config.h"
+
 void res_err_free(res_err_t *err) {
   if (err) {
     if (err->code) {

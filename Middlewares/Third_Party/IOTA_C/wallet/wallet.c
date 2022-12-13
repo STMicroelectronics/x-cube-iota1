@@ -22,11 +22,10 @@
 
 // TODO: move to utils?
 // validate path: m/44',/4218',/Account',/Change'
-int validate_pib44_path(char const path[]) {
+static int validate_pib44_path(char const path[]) {
   static char const* const iota_bip44_prefix = "m/44'/4218'";
   int ret = -1;
-  char tmp_path[IOTA_ACCOUNT_PATH_MAX];
-  memset(tmp_path, 0, sizeof(tmp_path));
+  char tmp_path[IOTA_ACCOUNT_PATH_MAX] = {};
   size_t path_len = strlen(path);
   if (path_len > IOTA_ACCOUNT_PATH_MAX - 1 || path_len == 0 || path_len == strlen(iota_bip44_prefix)) {
     printf("[%s:%d] Err: invalid length of path\n", __func__, __LINE__);
@@ -58,7 +57,6 @@ int validate_pib44_path(char const path[]) {
 
     // get value
     unsigned long value = strtoul(token, &ptr, 10);
-    (void)value;
 
     // hardened
     if (!(strncmp(ptr, "\'", 1) == 0 || strncmp(ptr, "H", 1) == 0)) {
@@ -102,134 +100,107 @@ static void get_address_path(uint32_t account, bool change, uint32_t index, char
 static transaction_payload_t* wallet_build_transaction(iota_wallet_t* w, bool change, uint32_t sender_index,
                                                        byte_t receiver[], uint64_t balance, char const index[],
                                                        byte_t data[], size_t data_len) {
-  char tmp_addr[IOTA_ADDRESS_HEX_BYTES + 1];
-  memset(tmp_addr, 0, sizeof(tmp_addr));
-  char addr_path[IOTA_ACCOUNT_PATH_MAX];
-  memset(addr_path, 0, sizeof(addr_path));
-  byte_t send_addr[ED25519_ADDRESS_BYTES];
-  memset(send_addr, 0, sizeof(send_addr));
-  byte_t tmp_tx_id[TRANSACTION_ID_BYTES];
-  memset(tmp_tx_id, 0, sizeof(tmp_tx_id));
-  iota_keypair_t addr_keypair;
-  memset(&addr_keypair, 0, sizeof(iota_keypair_t));
+  char tmp_addr[IOTA_ADDRESS_HEX_BYTES + 1] = {};
+  char addr_path[IOTA_ACCOUNT_PATH_MAX] = {};
+  byte_t send_addr[ED25519_ADDRESS_BYTES] = {};
+  byte_t tmp_tx_id[TRANSACTION_ID_BYTES] = {};
+  iota_keypair_t addr_keypair = {};
   res_outputs_address_t* outputs_res = NULL;
   transaction_payload_t* tx_payload = NULL;
-  size_t out_counts;
-  uint64_t total_balance;
-  uint64_t remainder;
   int ret = -1;
 
   // TODO loop over start and end addresses
   // get address keypair and address
-  
   get_address_path(w->account_index, change, sender_index, addr_path, sizeof(addr_path));
 
   if (address_keypair_from_path(w->seed, sizeof(w->seed), addr_path, &addr_keypair) != 0) {
     printf("[%s:%d] Cannot get address keypair\n", __func__, __LINE__);
-  } else {
-    ret = 0;
+    goto done;
   }
 
-  if (ret == 0) {
-    if (address_from_ed25519_pub(addr_keypair.pub, send_addr) != 0) {
-      printf("[%s:%d] Cannot get sending address \n", __func__, __LINE__);
-      ret = -1;
+  if (address_from_ed25519_pub(addr_keypair.pub, send_addr) != 0) {
+    printf("[%s:%d] Cannot get sending address \n", __func__, __LINE__);
+    goto done;
+  }
+
+  // get outputs
+  bin_2_hex(send_addr, sizeof(send_addr), tmp_addr, sizeof(tmp_addr));
+  if (!(outputs_res = res_outputs_address_new())) {
+    printf("[%s:%d] Err: invalid length of path\n", __func__, __LINE__);
+    return NULL;
+  }
+
+  if (get_outputs_from_address(&w->endpoint, false, tmp_addr, outputs_res) != 0) {
+    printf("[%s:%d] Err: get outputs from address failed\n", __func__, __LINE__);
+    goto done;
+  }
+
+  if (outputs_res->is_error) {
+    printf("[%s:%d] Error get outputs from addr: %s\n", __func__, __LINE__, outputs_res->u.error->msg);
+    goto done;
+  }
+
+  if ((tx_payload = tx_payload_new()) == NULL) {
+    printf("[%s:%d] allocate tx payload failed\n", __func__, __LINE__);
+    goto done;
+  }
+
+  size_t out_counts = res_outputs_address_output_id_count(outputs_res);
+  // get outputs and tx id and tx output index from genesis
+  uint64_t total_balance = 0;
+  for (size_t i = 0; i < out_counts; i++) {
+    char* output_id = res_outputs_address_output_id(outputs_res, i);
+    res_output_t out_id_res = {};
+    ret = get_output(&w->endpoint, output_id, &out_id_res);
+    if (out_id_res.is_error) {
+      printf("[%s:%d] Error response: %s\n", __func__, __LINE__, out_id_res.u.error->msg);
+      res_err_free(out_id_res.u.error);
     }
-  }
 
-  if (ret == 0) {
-    // get outputs
-    bin_2_hex(send_addr, sizeof(send_addr), tmp_addr, sizeof(tmp_addr));
-    outputs_res = res_outputs_address_new();
-    if (!outputs_res) {
-      printf("[%s:%d] Err: invalid length of path\n", __func__, __LINE__);
-      ret = -1;
-    }
-  }
-
-  if (ret == 0) {
-    if (get_outputs_from_address(&w->endpoint, false, tmp_addr, outputs_res) != 0) {
-      printf("[%s:%d] Err: get outputs from address failed\n", __func__, __LINE__);
-      ret = -1;
-    }
-  }
-
-  if (ret == 0) {
-    if (outputs_res->is_error) {
-      printf("[%s:%d] Error get outputs from addr: %s\n", __func__, __LINE__, outputs_res->u.error->msg);
-      ret = -1;
-    }
-  }
-
-  if (ret == 0) {
-    if ((tx_payload = tx_payload_new()) == NULL) {
-      printf("[%s:%d] allocate tx payload failed\n", __func__, __LINE__);
-      ret = -1;
-    }
-  }
-
-  if (ret == 0) {
-    out_counts = res_outputs_address_output_id_count(outputs_res);
-    // get outputs and tx id and tx output index from genesis
-    total_balance = 0;
-    for (size_t i = 0; i < out_counts; i++) {
-      char* output_id = res_outputs_address_output_id(outputs_res, i);
-      res_output_t out_id_res;
-      memset(&out_id_res, 0, sizeof(res_output_t));
-      ret = get_output(&w->endpoint, output_id, &out_id_res);
-      if (out_id_res.is_error) {
-        printf("[%s:%d] Error response: %s\n", __func__, __LINE__, out_id_res.u.error->msg);
-        res_err_free(out_id_res.u.error);
-      }
-      
-      // add input to transaction essence
-      if (!out_id_res.u.output.is_spent) {
-        if (out_id_res.u.output.address_type == ADDRESS_VER_ED25519) {
-          hex_2_bin(out_id_res.u.output.tx_id, TRANSACTION_ID_BYTES * 2, tmp_tx_id, sizeof(tmp_tx_id));
-          ret = tx_payload_add_input_with_key(tx_payload, tmp_tx_id, out_id_res.u.output.output_idx, addr_keypair.pub,
-                                              addr_keypair.priv);
-          total_balance += out_id_res.u.output.amount;
-          if (total_balance >= balance) {
-            // balance is sufficient from current inputs
-            break;
-          }
-        } else {
-          printf("Unknow address type\n");
+    // add input to transaction essence
+    if (!out_id_res.u.output.is_spent) {
+      if (out_id_res.u.output.address_type == ADDRESS_VER_ED25519) {
+        hex_2_bin(out_id_res.u.output.tx_id, TRANSACTION_ID_BYTES * 2, tmp_tx_id, sizeof(tmp_tx_id));
+        ret = tx_payload_add_input_with_key(tx_payload, tmp_tx_id, out_id_res.u.output.output_idx, addr_keypair.pub,
+                                            addr_keypair.priv);
+        total_balance += out_id_res.u.output.amount;
+        if (total_balance >= balance) {
+          // balance is sufficient from current inputs
+          break;
         }
+      } else {
+        printf("Unknow address type\n");
       }
     }
   }
 
-  if (ret == 0) {
-    if (utxo_inputs_count(&tx_payload->essence->inputs) == 0) {
-      printf("[%s:%d] Err: input not found\n", __func__, __LINE__);
-      ret = -1;
-    }
+  if (utxo_inputs_count(&tx_payload->essence->inputs) == 0) {
+    printf("[%s:%d] Err: input not found\n", __func__, __LINE__);
+    ret = -1;
+    goto done;
   }
 
-  if (ret == 0) {
-    if (total_balance < balance) {
-      printf("[%s:%d] Err: balance is not sufficient, total:%" PRIu64 " send balance:%" PRIu64 "\n", __func__, __LINE__,
-             total_balance, balance);
-      ret = -1;
-    }
+  if (total_balance < balance) {
+    printf("[%s:%d] Err: balance is not sufficient, total:%" PRIu64 " send balance:%" PRIu64 "\n", __func__, __LINE__,
+           total_balance, balance);
+    ret = -1;
+    goto done;
   }
 
-  if (ret == 0) {
-    remainder = total_balance - balance;
-    if (remainder > 0) {
-      ret = tx_payload_add_output(tx_payload, OUTPUT_SINGLE_OUTPUT, receiver, balance);
-      ret = tx_payload_add_output(tx_payload, OUTPUT_SINGLE_OUTPUT, send_addr, total_balance - balance);
-    } else {
-      ret = tx_payload_add_output(tx_payload, OUTPUT_SINGLE_OUTPUT, receiver, balance);
-    }
-
-    // with indexation?
-    if (index && data && data_len != 0) {
-      ret = tx_essence_add_payload(tx_payload->essence, 2, (void*)indexation_create(index, data, data_len));
-    }
+  uint64_t remainder = total_balance - balance;
+  if (remainder > 0) {
+    ret = tx_payload_add_output(tx_payload, OUTPUT_SINGLE_OUTPUT, receiver, balance);
+    ret = tx_payload_add_output(tx_payload, OUTPUT_SINGLE_OUTPUT, send_addr, total_balance - balance);
+  } else {
+    ret = tx_payload_add_output(tx_payload, OUTPUT_SINGLE_OUTPUT, receiver, balance);
   }
 
+  // with indexation?
+  if (index && data && data_len != 0) {
+    ret = tx_essence_add_payload(tx_payload->essence, 2, (void*)indexation_create(index, data, data_len));
+  }
+
+done:
   res_outputs_address_free(outputs_res);
 
   if (ret == -1) {
@@ -241,7 +212,7 @@ static transaction_payload_t* wallet_build_transaction(iota_wallet_t* w, bool ch
 }
 
 iota_wallet_t* wallet_create(char const ms[], char const pwd[], uint32_t account_index) {
-  char mnemonic_tmp[512] = {0};  // buffer for random mnemonic
+  char mnemonic_tmp[512] = {};  // buffer for random mnemonic
 
   if (!pwd) {
     printf("passphrase is needed\n");
@@ -307,7 +278,7 @@ int wallet_set_endpoint(iota_wallet_t* w, char const host[], uint16_t port, bool
 }
 
 int wallet_address_from_index(iota_wallet_t* w, bool change, uint32_t index, byte_t addr[]) {
-  char path_buf[IOTA_ACCOUNT_PATH_MAX] = {0};
+  char path_buf[IOTA_ACCOUNT_PATH_MAX] = {};
   if (!w || !addr) {
     printf("[%s:%d] Err: invalid parameters\n", __func__, __LINE__);
     return -1;
@@ -317,7 +288,7 @@ int wallet_address_from_index(iota_wallet_t* w, bool change, uint32_t index, byt
 }
 
 int wallet_bech32_from_index(iota_wallet_t* w, bool change, uint32_t index, char addr[]) {
-  byte_t tmp_addr[IOTA_ADDRESS_BYTES] = {0};
+  byte_t tmp_addr[IOTA_ADDRESS_BYTES] = {};
   if (wallet_address_from_index(w, change, index, tmp_addr + 1) == 0) {
     return address_2_bech32(tmp_addr, w->bech32HRP, addr);
   } else {
@@ -327,7 +298,7 @@ int wallet_bech32_from_index(iota_wallet_t* w, bool change, uint32_t index, char
 }
 
 int wallet_balance_by_address(iota_wallet_t* w, byte_t const addr[], uint64_t* balance) {
-  char hex_addr[IOTA_ADDRESS_HEX_BYTES + 1] = {0};
+  char hex_addr[IOTA_ADDRESS_HEX_BYTES + 1] = {};
   res_balance_t* bal_res = NULL;
 
   // binary address to hex string
@@ -358,7 +329,7 @@ int wallet_balance_by_address(iota_wallet_t* w, byte_t const addr[], uint64_t* b
 }
 
 int wallet_balance_by_index(iota_wallet_t* w, bool change, uint32_t index, uint64_t* balance) {
-  byte_t ed_addr[ED25519_ADDRESS_BYTES] = {0};
+  byte_t ed_addr[ED25519_ADDRESS_BYTES] = {};
   if (wallet_address_from_index(w, change, index, ed_addr) == 0) {
     return wallet_balance_by_address(w, ed_addr, balance);
   }
@@ -376,8 +347,7 @@ int wallet_send(iota_wallet_t* w, bool change, uint32_t addr_index, byte_t recei
   core_message_t* msg = NULL;
   indexation_t* idx = NULL;
   transaction_payload_t* tx = NULL;
-  res_send_message_t msg_res;
-  memset(&msg_res, 0, sizeof(res_send_message_t));
+  res_send_message_t msg_res = {};
 
   if (!w) {
     printf("[%s:%d] Err: invalid parameters\n", __func__, __LINE__);

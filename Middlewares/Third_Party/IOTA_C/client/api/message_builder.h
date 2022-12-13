@@ -10,26 +10,6 @@
 extern "C" {
 #endif
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup MESSAGE_Builder Message builder
- * @{
- */
-
-/** @defgroup MESSAGE_Builder_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
-
 /**
  * @brief Serialize message object to a JSON string
  *
@@ -37,26 +17,6 @@ extern "C" {
  * @return char*
  */
 char* message_to_json(core_message_t* msg);
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #ifdef __cplusplus
 }

@@ -11,26 +11,6 @@
 #include "core/address.h"
 #include "core/types.h"
 
-/** @addtogroup IOTA_C
- * @{
- */
-
-/** @addtogroup CLIENT
- * @{
- */
-
-/** @addtogroup API
- * @{
- */
-
-/** @defgroup GET_OUTPUTS_FROM_ADDRESS Get Outputs From Address
- * @{
- */
-
-/** @defgroup GET_OUTPUTS_FROM_ADDRESS_EXPORTED_TYPES Exported Types
- * @{
- */
-
 /**
  * @brief An output object
  *
@@ -55,24 +35,16 @@ typedef struct {
   } u;
 } res_outputs_address_t;
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup GET_OUTPUTS_FROM_ADDRESS_EXPORTED_FUNCTIONS Exported Functions
- * @{
- */
 
 /**
  * @brief Allocats an output address response object
  *
  * @return res_outputs_address_t*
  */
-res_outputs_address_t *res_outputs_address_new(void);
+res_outputs_address_t *res_outputs_address_new();
 
 /**
  * @brief Frees an output address response object
@@ -116,30 +88,11 @@ int deser_outputs_from_address(char const *const j_str, res_outputs_address_t *r
  * @param[out] res A response object
  * @return int 0 on successful
  */
-int get_outputs_from_address(iota_client_conf_t const *conf, bool is_bech32, char const addr[], res_outputs_address_t *res);
-
-/**
- * @}
- */
+int get_outputs_from_address(iota_client_conf_t const *conf, bool is_bech32, char const addr[],
+                             res_outputs_address_t *res);
 
 #ifdef __cplusplus
 }
 #endif
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/**
- * @}
- */
 
 #endif

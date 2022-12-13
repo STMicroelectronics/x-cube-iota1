@@ -6,9 +6,11 @@
 
 #include "client/api/json_utils.h"
 #include "client/api/v1/get_message.h"
-#include "client/network/http_lib.h"
+#include "client/network/http.h"
 #include "core/address.h"
 #include "core/utils/iota_str.h"
+
+#include "app_azure_rtos_config.h"
 
 static int deser_milestone(cJSON *milestone, res_message_t *res) {
   int ret = -1;
@@ -111,8 +113,7 @@ static int deser_tx_inputs(cJSON *essence_obj, payload_tx_t *payload_tx) {
       cJSON *tx_id_obj = cJSON_GetObjectItemCaseSensitive(elm, JSON_KEY_TX_ID);
       cJSON *tx_out_idx = cJSON_GetObjectItemCaseSensitive(elm, JSON_KEY_TX_OUT_INDEX);
       if (tx_id_obj && tx_out_idx) {
-        payload_tx_input_t input;
-        memset(&input, 0, sizeof(payload_tx_input_t));
+        payload_tx_input_t input = {0};
         char *str = cJSON_GetStringValue(tx_id_obj);
         if (str) {
           memcpy(input.tx_id, str, sizeof(input.tx_id));
@@ -173,8 +174,7 @@ static int deser_tx_outputs(cJSON *essence_obj, payload_tx_t *payload_tx) {
           if (cJSON_IsNumber(addr_type) && addr_type->valueint == ADDRESS_VER_ED25519) {
             cJSON *addr = cJSON_GetObjectItemCaseSensitive(tx_address_obj, JSON_KEY_ADDR);
             if (cJSON_IsString(addr) && cJSON_IsNumber(tx_amount_obj)) {
-              payload_tx_output_t output;
-              memset(&output, 0, sizeof(payload_tx_output_t));
+              payload_tx_output_t output = {0};
               memcpy(output.address, addr->valuestring, sizeof(output.address));
               output.amount = (uint64_t)tx_amount_obj->valuedouble;
               // add the output element to payload
@@ -231,8 +231,7 @@ static int deser_tx_blocks(cJSON *blocks_obj, payload_tx_t *payload_tx) {
             cJSON *pub = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_PUB_KEY);
             cJSON *sig = cJSON_GetObjectItemCaseSensitive(sig_obj, JSON_KEY_SIG);
             if (cJSON_IsString(pub) && cJSON_IsString(sig)) {
-              char sig_block[API_SIGNATURE_BLOCK_STR_LEN];
-              memset(sig_block, 0, sizeof(sig_block));
+              char sig_block[API_SIGNATURE_BLOCK_STR_LEN] = {0};
               sig_block[0] = sig_type->valueint;
               memcpy(sig_block + 1, pub->valuestring, API_PUB_KEY_HEX_STR_LEN);
               memcpy(sig_block + 1 + API_PUB_KEY_HEX_STR_LEN, sig->valuestring, API_SIGNATURE_HEX_STR_LEN);
@@ -345,11 +344,10 @@ end:
   return ret;
 }
 
-res_message_t *res_message_new(void) {
+res_message_t *res_message_new() {
   res_message_t *msg = malloc(sizeof(res_message_t));
   if (msg) {
     msg->is_error = false;
-    msg->u.error = NULL;
     msg->u.msg = NULL;
     return msg;
   }
@@ -388,8 +386,10 @@ int deser_get_message(char const *const j_str, res_message_t *res) {
     res->u.error = res_err;
     ret = 0;
     goto end;
-  } else {
+  }
 
+  // AP: Add scope to get rid of warning due to goto label
+  {
     cJSON *data_obj = cJSON_GetObjectItemCaseSensitive(json_obj, JSON_KEY_DATA);
     if (data_obj) {
       // new message object
@@ -405,13 +405,13 @@ int deser_get_message(char const *const j_str, res_message_t *res) {
         goto end;
       }
       
-     // parentMessageIds
-    if ((ret = json_string_array_to_utarray(data_obj, JSON_KEY_PARENT_IDS, res->u.msg->parent_msg_ids)) != 0) {
-      printf("[%s:%d]: parsing %s failed\n", __func__, __LINE__, JSON_KEY_PARENT_IDS);
-      utarray_free(res->u.msg->parent_msg_ids);
-      res->u.msg->parent_msg_ids = NULL;
-      goto end;
-    }
+      // parentMessageIds
+      if ((ret = json_string_array_to_utarray(data_obj, JSON_KEY_PARENT_IDS, res->u.msg->parent_msg_ids)) != 0) {
+        printf("[%s:%d]: parsing %s failed\n", __func__, __LINE__, JSON_KEY_PARENT_IDS);
+        utarray_free(res->u.msg->parent_msg_ids);
+        res->u.msg->parent_msg_ids = NULL;
+        goto end;
+      }
       
       // nonce
       if ((ret = json_get_string(data_obj, JSON_KEY_NONCE, res->u.msg->nonce, sizeof(res->u.msg->nonce))) != 0) {
@@ -421,8 +421,7 @@ int deser_get_message(char const *const j_str, res_message_t *res) {
       
       cJSON *payload = cJSON_GetObjectItemCaseSensitive(data_obj, JSON_KEY_PAYLOAD);
       if (payload) {
-        ret = json_get_uint32(payload, JSON_KEY_TYPE, &res->u.msg->type);
-        if (ret != 0) {
+        if ((ret = json_get_uint32(payload, JSON_KEY_TYPE, &res->u.msg->type) != 0)) {
           printf("[%s:%d]: gets %s failed\n", __func__, __LINE__, JSON_KEY_TYPE);
           goto end;
         }
@@ -457,9 +456,8 @@ end:
 int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_message_t *res) {
   int ret = -1;
   iota_str_t *cmd = NULL;
-  http_context_t http_ctx;
-  http_response_t http_res;
-  memset(&http_res, 0, sizeof(http_response_t));
+  byte_buf_t *http_res = NULL;
+  long st = 0;
   char const *const cmd_str = "/api/v1/messages/";
 
   if (conf == NULL || msg_id == NULL || res == NULL) {
@@ -482,51 +480,25 @@ int get_message_by_id(iota_client_conf_t const *conf, char const msg_id[], res_m
   snprintf(cmd->buf, cmd->cap, "%s%s", cmd_str, msg_id);
   cmd->len = strlen(cmd->buf);
 
-  // allocate response
-  http_res.body = byte_buf_new();
-  if (http_res.body == NULL) {
-    printf("[%s:%d]: allocate response failed\n", __func__, __LINE__);
-    goto done;
-  }
-  http_res.code = 0;
-
   // http client configuration
-  http_ctx.host = conf->host;
-  http_ctx.path = cmd->buf;
-  http_ctx.use_tls = conf->use_tls;
-  http_ctx.port = conf->port;
+  http_client_config_t http_conf = {.host = conf->host, .path = cmd->buf, .use_tls = conf->use_tls, .port = conf->port};
 
-  // http open
-  ret = http_open(&http_ctx);
-  if (ret != HTTP_OK) {
-    printf("[%s:%d]: Can not open HTTP connection\n", __func__, __LINE__);
+  if ((http_res = byte_buf_new()) == NULL) {
+    printf("[%s:%d]: OOM\n", __func__, __LINE__);
     goto done;
   }
 
   // send request via http client
-  ret = http_read(&http_ctx,
-                  &http_res,
-                  "Content-Type: application/json",
-                  NULL);
-  if (ret < 0) {
-    printf("[%s:%d]: HTTP read problem\n", __func__, __LINE__);
-  } else {
-    byte_buf2str(http_res.body);
+  if ((ret = http_client_get(&http_conf, http_res, &st)) == 0) {
+    byte_buf2str(http_res);
     // json deserialization
-    ret = deser_get_message((char const *)http_res.body->data, res);
-  }
-
-  // http close
-  if (http_close(&http_ctx) != HTTP_OK )
-  {
-    printf("[%s:%d]: Can not close HTTP connection\n", __func__, __LINE__);
-    ret = -1;
+    ret = deser_get_message((char const *)http_res->data, res);
   }
 
 done:
   // cleanup command
   iota_str_destroy(cmd);
-  byte_buf_free(http_res.body);
+  byte_buf_free(http_res);
   return ret;
 }
 
