@@ -2,6 +2,12 @@
 
 ![latest tag](https://img.shields.io/github/v/tag/STMicroelectronics/x-cube-iota1.svg?color=brightgreen)
 
+WARNING!!!
+
+This repository is now deprecated and not maintained any more!
+
+WARNING!!!
+
 The X-CUBE-IOTA1 is an expansion software package for STM32Cube.
 The software runs on the STM32 and includes the middleware 
 for enabling the IOTA Distributed Ledger Technology. The expansion 
